@@ -1,0 +1,33 @@
+# Project Constraints (FE)
+
+## Scope
+- Stack: React + TypeScript + TanStack Router + Redux Toolkit + Axios + Yup.
+- Architecture type: single frontend app (not microservices, not DDD, no event bus).
+
+## Enforced File Structure
+- `src/routes`: route registration files only (`createFileRoute`, `lazy`, guards).
+- `src/features/<feature>`: feature logic only (pages/hooks/states/validation).
+- `src/components/ui`: shared, reusable, feature-agnostic UI primitives only.
+- `src/components/<feature>`: feature-specific components (example: `src/components/auth`).
+- `src/services`: API client + domain service modules (`auth`, `user`, shared API types).
+- `src/storage`: browser storage wrappers (`localStorage`/`sessionStorage`) and related types.
+- `src/lib`: pure stateless utilities (no storage/network/business state).
+- `src/common`: cross-feature helpers/schema used by multiple features.
+- `src/store`: Redux store setup and typed hooks.
+- `src/utils`: pure utility helpers that do not belong to a specific feature.
+
+## Hard Rules
+- Never place feature-specific components in `src/components/ui`.
+- Never place storage handlers in `src/lib`; put them in `src/storage`.
+- Never call HTTP clients directly from route files; route files must delegate to pages/services.
+- Never import from `src/routes` into features/components/services.
+- Keep `src/routeTree.gen.ts` generated-only; do not hand-edit.
+
+## Dependency Direction
+- Allowed flow: `routes -> features/components -> services/storage/lib/common`.
+- `services` may depend on `storage` and shared `types`, but not on feature pages/components.
+- `components/ui` must not import from `features/*`.
+
+## Change Policy
+- Prefer modifying existing modules before adding new abstractions.
+- New folders/files must follow the structure above; if unsure, stop and ask.

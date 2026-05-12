@@ -20,6 +20,14 @@ export const tokenStorage = {
     return getStorage()?.getItem(REFRESH_TOKEN_KEY) ?? null
   },
 
+  getTokens(): AuthTokens | null {
+    const accessToken = this.getAccessToken()
+    const refreshToken = this.getRefreshToken()
+    if (!accessToken || !refreshToken) return null
+
+    return { accessToken, refreshToken }
+  },
+
   setTokens(tokens: AuthTokens) {
     const storage = getStorage()
     storage?.setItem(ACCESS_TOKEN_KEY, tokens.accessToken)

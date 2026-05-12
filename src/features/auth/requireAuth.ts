@@ -1,11 +1,11 @@
 import { redirect } from '@tanstack/react-router'
 
-import { tokenStorage } from '@/lib/tokenStorage'
+import { store } from '@/store/store'
 
 export function requireAuth() {
   if (typeof window === 'undefined') return
 
-  if (!tokenStorage.getAccessToken()) {
+  if (!store.getState().auth.tokens?.accessToken) {
     throw redirect({ to: '/login' })
   }
 }

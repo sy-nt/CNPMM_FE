@@ -15,6 +15,7 @@
     "check": "prettier --check ."
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.11.2",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-router": "latest",
@@ -26,6 +27,7 @@
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-redux": "^9.2.0",
     "tailwindcss": "^4.3.0",
     "yup": "^1.7.1"
   },

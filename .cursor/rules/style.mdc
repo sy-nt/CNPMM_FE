@@ -1,0 +1,29 @@
+# Style Rules (TypeScript + React)
+
+## General
+- Keep changes small and scoped; avoid speculative abstraction.
+- Follow existing naming and folder conventions before adding new patterns.
+- Prefer explicit types at module boundaries (service contracts, storage contracts).
+
+## React Components
+- Keep presentational shared components in `src/components/ui`.
+- Keep feature-specific components under `src/components/<feature>`.
+- Avoid business side effects in reusable UI primitives.
+
+## Services and Data
+- API calls go through `src/services/api-client.ts`.
+- Keep DTO/type definitions in `src/services/*/types.ts` or `src/services/types.ts`.
+- Convert external responses in service/feature layers, not in route definitions.
+
+## Validation
+- Use Yup schemas in `src/features/<feature>/validation`.
+- Validate form payloads before triggering async actions.
+
+## Imports
+- Use aliases (`@/*`, `@ui/*`) consistently.
+- Keep import order stable: external libs, internal aliases, local relatives.
+- Do not add new path aliases without strong need.
+
+## Tests and Checks
+- For behavior changes, run lint/tests relevant to touched modules.
+- Do not start dev servers as part of verification unless explicitly requested.

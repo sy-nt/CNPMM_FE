@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { getApiErrorMessage } from '@/lib/api'
+import { getApiErrorMessage } from '@/services/api-client'
 
 export function useAsyncAction<TArgs extends Array<unknown>, TResult>(
   action: (...args: TArgs) => Promise<TResult>,

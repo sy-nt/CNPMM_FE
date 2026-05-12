@@ -1,8 +1,16 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { Provider } from 'react-redux'
+import { useEffect, useMemo } from 'react'
 import type { ReactNode } from 'react'
 
-import type { AuthTokens } from '@/lib/tokenStorage'
-import { tokenStorage } from '@/lib/tokenStorage'
+import {
+  bootstrapSession,
+  clearSessionState,
+  setSessionState,
+} from '@/features/auth/states/authSlice'
+import type { AuthTokens } from '@/storage/tokenStorage'
+import { tokenStorage } from '@/storage/tokenStorage'
+import { useAppDispatch, useAppSelector } from '@/store/hooks'
+import { store } from '@/store/store'
 
 type AuthContextValue = {
   clearSession: () => void
@@ -11,38 +19,41 @@ type AuthContextValue = {
   setSession: (tokens: AuthTokens) => void
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null)
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isReady, setIsReady] = useState(false)
+  return (
+    <Provider store={store}>
+      <AuthBootstrap>{children}</AuthBootstrap>
+    </Provider>
+  )
+}
 
+function AuthBootstrap({ children }: { children: ReactNode }) {
+  const dispatch = useAppDispatch()
   useEffect(() => {
-    setIsAuthenticated(Boolean(tokenStorage.getAccessToken()))
-    setIsReady(true)
-  }, [])
+    dispatch(bootstrapSession(tokenStorage.getTokens()))
+  }, [dispatch])
 
-  const value = useMemo<AuthContextValue>(
+  return children
+}
+
+export function useAuth(): AuthContextValue {
+  const dispatch = useAppDispatch()
+  const isReady = useAppSelector((state) => state.auth.isReady)
+  const isAuthenticated = useAppSelector((state) => Boolean(state.auth.tokens))
+
+  return useMemo(
     () => ({
       clearSession() {
         tokenStorage.clear()
-        setIsAuthenticated(false)
+        dispatch(clearSessionState())
       },
       isAuthenticated,
       isReady,
-      setSession(tokens) {
+      setSession(tokens: AuthTokens) {
         tokenStorage.setTokens(tokens)
-        setIsAuthenticated(true)
+        dispatch(setSessionState(tokens))
       },
     }),
-    [isAuthenticated, isReady],
+    [dispatch, isAuthenticated, isReady],
   )
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) throw new Error('useAuth must be used within AuthProvider')
-  return context
 }

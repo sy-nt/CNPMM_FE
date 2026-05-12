@@ -1,0 +1,23 @@
+# Skill: Service Generation (Frontend)
+
+## Goal
+Create or update a service module in `src/services/<domain>/` that follows project boundaries.
+
+## Required Structure
+- Service implementation: `src/services/<domain>/index.ts`
+- Service types: `src/services/<domain>/types.ts` (or `src/services/types.ts` for shared types)
+- HTTP calls must use `src/services/api-client.ts`
+- Storage dependencies must come from `src/storage/*`
+
+## Rules
+- Do not import UI/components/routes in services.
+- Keep services framework-agnostic and side-effect-light.
+- Normalize API errors through existing API error helpers.
+- Export typed functions; avoid `any`.
+
+## Checklist
+- [ ] Domain folder exists in `src/services/`
+- [ ] Uses `apiClient`
+- [ ] Uses existing storage wrapper if tokens/session are required
+- [ ] Types are defined and exported
+- [ ] No feature/page/component imports

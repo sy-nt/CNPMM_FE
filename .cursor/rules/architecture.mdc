@@ -1,0 +1,39 @@
+# Architecture Rules (Frontend)
+
+## System Boundaries
+- This repo is a frontend monolith with feature modules.
+- No backend architectural patterns (controllers/repositories/sagas/outbox) are present; do not introduce them unless explicitly requested.
+
+## Route Layer
+- Route files in `src/routes` must stay thin:
+  - define route
+  - lazy-load page
+  - optional auth guard
+  - suspense fallback
+- Business logic, API calls, and validation must live outside route files.
+
+## Feature Layer
+- Each feature owns its own:
+  - `pages/`
+  - `hooks/`
+  - `states/`
+  - `validation/`
+- Cross-feature access should happen through public feature exports or shared modules, not deep imports into internal files.
+
+## UI Layer
+- `src/components/ui` = global reusable primitives only.
+- `src/components/<feature>` = feature-specific components only.
+- If a component is used only by auth, it must stay in `src/components/auth`.
+
+## Service and Storage Layer
+- `src/services/api-client.ts` is the HTTP foundation.
+- Domain API logic belongs in `src/services/<domain>/`.
+- Browser persistence wrappers belong in `src/storage/`.
+- Direct `localStorage`/`sessionStorage` usage should be wrapped in `src/storage` when shared across modules.
+
+## Import Boundaries
+- Forbidden:
+  - `components/ui -> features/*`
+  - `services -> features/pages/components`
+  - `features -> routes`
+- Prefer aliases (`@/*`, `@ui/*`) over deep relative paths.

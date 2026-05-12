@@ -3,9 +3,9 @@ import { Home, Menu, ShoppingBag, UserRound, X } from 'lucide-react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useAuth } from '@/features/auth/AuthProvider'
 import { cn } from '@/lib/cn'
+import { ThemeToggle } from '@ui/ThemeToggle'
 
 type AppShellProps = {
   children?: ReactNode

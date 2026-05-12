@@ -1,0 +1,26 @@
+# Skill: Route + Page Endpoint Wiring
+
+## Goal
+Add a new page route flow while preserving file boundaries.
+
+## Required Split
+- Route file: `src/routes/<name>.tsx`
+- Page component: `src/features/<feature>/pages/<Name>Page.tsx`
+- Service call: `src/services/<domain>/index.ts`
+- Validation: `src/features/<feature>/validation/*.ts`
+
+## Route File Rules
+- Only route declaration, lazy page import, suspense fallback, optional guard.
+- No direct API calls.
+- No business validation logic.
+
+## Page Rules
+- Use feature hooks/state/validation.
+- Delegate network calls to services.
+- Use feature-specific components from `src/components/<feature>` and shared primitives from `src/components/ui`.
+
+## Checklist
+- [ ] Route is thin and lazy-loaded
+- [ ] Business logic in feature page/hook
+- [ ] API call in service layer
+- [ ] Validation co-located in feature validation folder

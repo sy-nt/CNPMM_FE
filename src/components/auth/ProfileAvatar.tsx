@@ -1,7 +1,7 @@
 import { UserRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import type { UserProfile } from '@/lib/api'
+import type { UserProfile } from '@/services/user/types'
 
 type ProfileAvatarProps = {
   user: UserProfile
