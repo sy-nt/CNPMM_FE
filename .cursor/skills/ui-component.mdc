@@ -1,0 +1,84 @@
+---
+description: Create or extend a UI component following the project's shadcn + Tailwind v4 conventions. Use when adding a presentational primitive or a shared composite component. Trigger phrases include "add a component", "create a button / card / dialog", "build a UI component".
+alwaysApply: false
+---
+
+# UI Component Skill
+
+## 1. Decide location
+
+| Type | Location |
+|---|---|
+| shadcn primitive (button, card, dialog, input, sonner, …) | `src/components/ui/` — **install via shadcn CLI**, never hand-author |
+| App-aware shared composite (auth card, navigation, page shells) | `src/components/<area>/<name>.tsx` |
+| Route-owned component (used only by one route) | Co-locate next to the route file: e.g., `src/routes/posts.-components/post-card.tsx` |
+| Brand / app SVG icon | `src/components/icons/<name>.tsx` (named React component, accepts `className`) |
+
+## 2. Install primitives via shadcn
+
+```bash
+yarn dlx shadcn@latest add <component>     # latest version, no pinning
+```
+
+Examples that are likely to be needed first: `button`, `card`, `dialog`, `input`, `label`, `form`, `sonner`, `dropdown-menu`, `sheet`, `tabs`. Do not introduce a different primitive library.
+
+## 3. Author a composite
+
+```tsx
+import type { ComponentProps } from 'react'
+import { cn } from '#/lib/utils'
+
+type AuthCardProps = ComponentProps<'section'> & {
+  title: string
+  description?: string
+}
+
+export function AuthCard({ title, description, className, children, ...props }: AuthCardProps) {
+  return (
+    <section
+      className={cn(
+        'island-shell mx-auto w-full max-w-md rounded-2xl p-8',
+        className,
+      )}
+      {...props}
+    >
+      <header className="mb-6">
+        <h2 className="display-title text-2xl">{title}</h2>
+        {description ? (
+          <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        ) : null}
+      </header>
+      {children}
+    </section>
+  )
+}
+```
+
+Rules followed in the example:
+
+- Explicit prop type, named export, kebab-case file name (`auth-card.tsx`).
+- Class merge through `cn()`. Brand class `island-shell` is reused from `src/styles.css`.
+- Token utilities (`text-muted-foreground`) for shadcn-aware colours.
+- `ComponentProps<'section'>` to forward valid `<section>` attributes.
+
+## 4. Variants
+
+- Use `class-variance-authority` (`cva`) for components with multiple visual variants — it is already a dependency and matches shadcn-generated output.
+- Variants and sizes are explicit props — never magic strings stitched into `className`.
+
+## 5. Icons
+
+- Default to `lucide-react` named imports: `import { Search } from 'lucide-react'`.
+- For brand-specific glyphs, add `src/components/icons/<name>.tsx` returning inline SVG that accepts `className`.
+
+## 6. Tests
+
+- Colocate `<component>.test.tsx` next to the component when behaviour is testable (controlled state, handlers, conditional rendering).
+- Skip tests for pure stylistic wrappers around a shadcn primitive.
+
+## Constraints
+
+- No business logic inside component JSX. No fetching, no router-aware logic — accept data via props or pull from the matched `Route` API at the consuming layer.
+- Every interactive element has an accessible name (visible label, `aria-label`, or `aria-labelledby`).
+- Don't add a dependency to satisfy a one-off icon — use `lucide-react` or an inline SVG.
+- Don't hand-edit files in `src/components/ui/`; install/upgrade them via the shadcn CLI and customise via variant props.

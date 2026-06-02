@@ -1,0 +1,150 @@
+---
+description: UI library, design tokens, components, and styling patterns for the CNPM Fe frontend.
+globs:
+  - "src/**/*.{tsx,jsx,css}"
+alwaysApply: true
+---
+
+# UI & Styling
+
+## Foundations
+
+- **shadcn/ui** is the primary primitive library (configured in `components.json`: `style: "new-york"`, `baseColor: "zinc"`, `iconLibrary: "lucide"`, `tsx: true`, `rsc: false`).
+- **Tailwind CSS v4** is the styling system (entry: `src/styles.css`, plugin chain: `@tailwindcss/vite` + `@tailwindcss/typography` + `tw-animate-css`).
+- Icons come from `lucide-react`.
+- Class merger is `cn()` from `#/lib/utils`.
+
+## Adding shadcn primitives
+
+```bash
+yarn dlx shadcn@latest add <component>   # e.g., button, dialog, card, sonner
+```
+
+Generated files land in `src/components/ui/<component>.tsx`. shadcn writes imports as `import { cn } from '#/lib/utils'`. Do NOT hand-author files in `src/components/ui/` — install them. Customise via the variant props the generator emits (`class-variance-authority` is in dependencies for this purpose).
+
+## Design tokens
+
+Tokens are CSS variables in `src/styles.css`:
+
+- **Brand palette** (custom): `--sea-ink`, `--sea-ink-soft`, `--lagoon`, `--lagoon-deep`, `--palm`, `--sand`, `--foam`, `--surface`, `--surface-strong`, `--line`, `--inset-glint`, `--kicker`, `--bg-base`, `--header-bg`, `--chip-bg`, `--chip-line`, `--link-bg-hover`, `--hero-a`, `--hero-b`.
+- **shadcn semantic palette** (`oklch()`): `--background`, `--foreground`, `--card[-foreground]`, `--popover[-foreground]`, `--primary[-foreground]`, `--secondary[-foreground]`, `--muted[-foreground]`, `--accent[-foreground]`, `--destructive[-foreground]`, `--border`, `--input`, `--ring`, `--chart-1..5`, `--sidebar*`.
+- **Radii**: `--radius` (0.625rem) and the derived `--radius-sm | -md | -lg | -xl` exposed via `@theme inline`.
+- **Font**: `--font-sans` → `Manrope` (loaded from Google Fonts in `src/styles.css`); `Fraunces` is reserved for `.display-title`.
+
+Dark mode: class-based via `<html class="dark">` (or any ancestor) and the `@custom-variant dark (&:is(.dark *))` declaration in `src/styles.css`. Use the same token classes — don't fork colour logic per theme.
+
+## Class composition rules
+
+- **Always** merge through `cn()`:
+  ```tsx
+  import { cn } from '#/lib/utils'
+
+  export function Card({ className, ...props }: CardProps) {
+    return <div className={cn('rounded-lg border bg-card p-6', className)} {...props} />
+  }
+  ```
+- Tailwind class order is auto-managed by Prettier. Do not hand-sort.
+- Prefer **token utilities** (`bg-background`, `text-foreground`, `border-border`, `text-primary`, `bg-card`, `text-muted-foreground`) over arbitrary hex.
+- Use the brand tokens via `var()` for one-off bespoke surfaces (`background: linear-gradient(165deg, var(--surface-strong), var(--surface))`). Repeated bespoke values → declare a new CSS variable in `src/styles.css`, don't copy-paste hex.
+- Tailwind v4 `!` suffix (e.g., `mb-0!`) is the v4-native way to mark `!important`. Use it sparingly when overriding primitive styles you don't control.
+
+## Components
+
+### Generated primitives — `src/components/ui/*` (after first `shadcn add`)
+
+- Variants use `class-variance-authority` (`cva`) — already a dependency.
+- Forwarded refs and Radix `asChild` (via `@radix-ui/react-slot`) are standard for shadcn — preserve them when extending.
+- Set `data-slot="…"` on roots when shadcn generates them; this enables parent-driven styling.
+
+### Shared composites — `src/components/<area>/*`
+
+For app-aware widgets that wire primitives + project state. Add new shared components here when used in more than one route.
+
+### Icons
+
+- Default icon library is `lucide-react`. Import named icons: `import { Search } from 'lucide-react'`.
+- Brand / app-specific SVGs live as named React components under `src/components/icons/` (folder created when first added). Inline SVG; accept `className` and let consumers size via Tailwind.
+
+## Forms
+
+`@tanstack/react-form` + Zod is the sanctioned stack. Pattern:
+
+```tsx
+import { useForm } from '@tanstack/react-form'
+import { z } from 'zod'
+
+const schema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+})
+
+export function LoginForm() {
+  const form = useForm({
+    defaultValues: { email: '', password: '' },
+    onSubmit: async ({ value }) => {
+      const parsed = schema.parse(value)
+      // …call server function or mutation
+    },
+  })
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        void form.handleSubmit()
+      }}
+    >
+      <form.Field
+        name="email"
+        validators={{ onChange: schema.shape.email }}
+        children={(field) => (
+          <input
+            value={field.state.value}
+            onChange={(e) => field.handleChange(e.target.value)}
+            onBlur={field.handleBlur}
+          />
+        )}
+      />
+    </form>
+  )
+}
+```
+
+- The Zod schema is the single source of truth — derive types via `z.infer<typeof schema>`.
+- Per-field validation goes through `validators: { onChange: schema.shape.<field> }` (or the form-level `onSubmit` validator).
+- Strip `undefined` / `''` from the payload before submitting if the server schema is stricter than the form one.
+- When shadcn `Form` / `FormField` primitives are installed (via `yarn dlx shadcn@latest add form`), wrap inputs through them so error messages render automatically.
+
+## Feedback
+
+- shadcn `Sonner` (`yarn dlx shadcn@latest add sonner`) is the recommended toast surface once UI feedback is needed. Mount `<Toaster />` once in `src/routes/__root.tsx`'s `RootDocument`.
+- Loading: prefer `pendingComponent` on the route + `<Suspense fallback={…}>` boundaries. Avoid hand-rolled spinners when the router already exposes a pending state.
+
+## Accessibility
+
+- Buttons that are not text-labeled MUST have `aria-label`.
+- External links: `target="_blank" rel="noopener noreferrer"`.
+- Modal / drawer overlays must trap focus and label the dismiss button — use shadcn `Dialog` (Radix) for this; do not hand-roll.
+- Color is never the only indicator of state — pair with text, icon, or pattern.
+- Always set `placeholder` on inputs that don't have a visible label.
+
+## Cursor affordance
+
+Every clickable surface MUST show `cursor: pointer` on hover. Tailwind v4's preflight removed the default `cursor: pointer` from `button`, so we re-apply it once globally in `src/styles.css` (`@layer base`) — buttons, `[role="button"]`, `a[href]`, `label[for]`, `summary`, `[data-clickable]`. Disabled surfaces (`:disabled`, `[aria-disabled="true"]`, `[data-disabled="true"]`) get `cursor: not-allowed`.
+
+Consequences:
+
+- Do NOT add `className="cursor-pointer"` per component — the base layer covers it.
+- Custom clickable `<div>` / `<span>` widgets MUST carry `role="button"` (so they get the cursor + keyboard semantics) or, when role isn't semantically right, opt in explicitly with `data-clickable`.
+- A disabled `<button>` should set `disabled` (or `aria-disabled="true"` if the element needs to remain focusable for screen readers) — never just hide the click handler.
+
+## HTML from external sources
+
+If feature code ever needs to render HTML strings from a server, sanitise first (e.g., via `dompurify`) before `dangerouslySetInnerHTML`. **Do not introduce `dompurify` as a dependency until that case actually exists.**
+
+## Responsiveness
+
+- Mobile-first.
+- Use Tailwind's `sm: md: lg: xl:` breakpoints; don't fork layout files per breakpoint.
+- Existing custom classes (`.page-wrap`, `.island-shell`, `.feature-card`, `.nav-link`, `.rise-in`, `.site-footer`) are defined in `src/styles.css` — reuse them when matching the existing visual language; don't re-declare equivalents.

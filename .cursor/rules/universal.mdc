@@ -1,0 +1,55 @@
+---
+description: Universal coding rules applied to every file in this repository.
+alwaysApply: true
+---
+
+# Universal Rules
+
+## 1. Explicit input and output types
+
+- Every exported function, exported component, hook, and public API declares parameter and return types.
+- No implicit `any`. For untrusted inputs (e.g., loader data not yet validated, server-function return values, external HTTP responses), type the value as `unknown` and narrow before use.
+- Validators (Zod) sit at every external boundary: form submissions, server-function inputs, route loaders parsing search params, and any data crossing the network. Types are derived from the schema (`z.infer<typeof schema>`) — never duplicated.
+
+## 2. Layer boundaries
+
+This is a frontend app with file-based routing; the dependency direction is:
+
+```
+routes/ (TanStack Router file routes)
+  ↓ may import
+components/ (presentational + composite)
+  ↓ may import
+lib/ (framework-agnostic helpers — cn, formatters, schemas)
+```
+
+- Lower layers MUST NOT import higher layers (`lib/` cannot import from `routes/` or `components/`).
+- `components/ui/*` (shadcn-generated primitives) MUST NOT import from feature components or routes.
+- Cross-feature reuse goes through `components/` (shared composites) or `lib/` — not by importing across feature folders.
+- `src/router.tsx` and `src/routes/__root.tsx` are the only places that wire global app concerns (router instance, devtools panel, `<head>`).
+
+## 3. No magic numbers or strings
+
+- Every meaningful literal (timeouts, retries, limits, URLs, env keys, route paths used outside file-based routing, enum-like strings) lives in a `constants.ts` file or alongside the schema that owns it.
+- Scope first, then promote: module-local → feature-shared → `src/lib/constants.ts`.
+- Time uses named durations (`STALE_TIME_MS = 30_000`), never bare numbers.
+- The literals `0`, `1`, `-1`, `''`, `true`, `false` are allowed inline. Anything else needs a name.
+- Route paths in TanStack Router are owned by file-based routing — refer to routes via the typed `<Link to="/path">` API or `useNavigate()`, never by retyping path strings.
+
+## 4. Private function naming
+
+- TypeScript: prefix non-exported helpers and private class members with `_` (`function _normalizeKey(...)`, `private _buildQuery(): string`).
+- Files starting with `_` are private to their folder.
+- The `_` prefix is for **module-level private**, not for unused parameters — for unused parameters in TS, the convention here is the existing `noUnusedParameters` rule with `_`-prefix to silence the warning where intentional.
+
+## Boundary validation
+
+- Every form submission, server-function payload, route loader input (search params / params), and external HTTP response is validated through a Zod schema at the entry point. Reject early with a structured error.
+- Never trust `loader` / `useLoaderData` data at the type level if it originated from an unvalidated source — narrow it through Zod first.
+
+## Error handling
+
+- Never swallow errors silently. `try/catch` blocks either re-throw or surface a typed error to the caller.
+- When wrapping, preserve the original cause: `throw new Error('failed to X', { cause: err })`.
+- User-facing error messages NEVER include stack traces, internal paths, or raw server responses.
+- Route errors flow through TanStack Router's error boundaries; do not invent a parallel error-display mechanism.

@@ -1,0 +1,139 @@
+---
+description: Add a new TanStack Router file-based route (with optional loader, validated search params, and pending/error UI). Use when adding a new page or nested route. Trigger phrases include "add a page", "add a route", "create a new screen", "nested route for X".
+alwaysApply: false
+---
+
+# Add a Route Skill (TanStack Router file-based)
+
+This project uses **TanStack Router file-based routing** under `src/routes/`. The route tree is generated into `src/routeTree.gen.ts` by `@tanstack/router-plugin` (wired through `tanstackStart()` in `vite.config.ts`).
+
+## 1. Decide the file name
+
+Map the URL to a file under `src/routes/`:
+
+| URL | File |
+|---|---|
+| `/` | `src/routes/index.tsx` |
+| `/about` | `src/routes/about.tsx` |
+| `/posts` | `src/routes/posts.tsx` |
+| `/posts/$postId` | `src/routes/posts.$postId.tsx` |
+| pathless layout wrapping `/dashboard/*` | `src/routes/_dashboard.tsx` (+ children: `_dashboard.index.tsx`, `_dashboard.users.tsx`, …) |
+| route group folder | `src/routes/(auth)/login.tsx`, `src/routes/(auth)/sign-up.tsx` (parentheses make a non-URL group) |
+
+The dot separator is the path separator. The `$` prefix marks a dynamic param. The `_` prefix marks a pathless segment.
+
+## 2. Minimum route file
+
+```tsx
+import { createFileRoute } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/posts')({
+  component: PostsPage,
+})
+
+function PostsPage() {
+  return <div className="p-8">Posts</div>
+}
+```
+
+Rules:
+
+- Always **named export** `Route`. No default export on a route file.
+- The string passed to `createFileRoute('/posts')` MUST match the file path; the router plugin enforces this.
+- Component name is PascalCase and ends in `Page` (or another descriptive suffix); the file name stays kebab-case (TanStack file-based naming conventions take precedence: `posts.$postId.tsx` is correct, never `Posts.PostId.tsx`).
+
+## 3. Add params and search
+
+```tsx
+import { createFileRoute } from '@tanstack/react-router'
+import { z } from 'zod'
+
+const searchSchema = z.object({
+  page: z.number().int().positive().catch(1),
+  q: z.string().optional(),
+})
+
+export const Route = createFileRoute('/posts')({
+  validateSearch: (search) => searchSchema.parse(search),
+  component: PostsPage,
+})
+
+function PostsPage() {
+  const { page, q } = Route.useSearch()
+  return <div className="p-8">page={page}, q={q ?? ''}</div>
+}
+```
+
+For dynamic params (`/posts/$postId`):
+
+```tsx
+const { postId } = Route.useParams()
+```
+
+## 4. Add a loader
+
+```tsx
+export const Route = createFileRoute('/posts/$postId')({
+  loader: async ({ params, signal }) => {
+    const data = await fetchPost(params.postId, { signal })
+    return { post: data }
+  },
+  pendingComponent: () => <div className="p-8">Loading…</div>,
+  errorComponent: ({ error }) => (
+    <div className="p-8 text-destructive">
+      {error instanceof Error ? error.message : 'Something went wrong'}
+    </div>
+  ),
+  component: PostPage,
+})
+
+function PostPage() {
+  const { post } = Route.useLoaderData()
+  return <article className="p-8">{post.title}</article>
+}
+```
+
+- Always pass through the `signal` to `fetch` so navigation cancellation works.
+- The loader's return type is inferred — `useLoaderData()` is fully typed.
+- If the loader can fail in expected ways, prefer returning a `Result` shape over throwing — throwing only when unrecoverable.
+
+## 5. Server functions for mutations / server-only fetches
+
+```tsx
+import { createServerFn } from '@tanstack/react-start'
+import { z } from 'zod'
+
+const inputSchema = z.object({ title: z.string().min(1).max(200), body: z.string() })
+
+export const createPost = createServerFn({ method: 'POST' })
+  .validator(inputSchema.parse)
+  .handler(async ({ data }) => {
+    // run server-only code (DB, secrets, headers)
+    return { id: 'generated-id', ...data }
+  })
+```
+
+Call from a component or loader: `await createPost({ data: { title, body } })`.
+
+## 6. Linking and navigating
+
+- Use the typed `<Link to="/posts/$postId" params={{ postId }}>…</Link>` — never retype path strings.
+- Programmatic navigation: `const navigate = useNavigate(); navigate({ to: '/posts/$postId', params: { postId } })`.
+- Update search params: `navigate({ search: (s) => ({ ...s, page: 2 }) })`.
+
+## 7. Verify
+
+- Save the file. The router plugin re-generates `src/routeTree.gen.ts` on the next dev/build cycle. Don't edit that file.
+- Run `yarn tsc --noEmit` — typed search/params/loaders are checked end to end.
+- Run `yarn lint`.
+
+## Acceptance checklist
+
+- [ ] File path matches the URL via TanStack file-based conventions.
+- [ ] `createFileRoute('<exact path>')` matches the file location.
+- [ ] No default export.
+- [ ] Search params (if any) validated through Zod via `validateSearch`.
+- [ ] Loader passes `signal` to `fetch`; returns typed data.
+- [ ] Pending and error UI declared when the route can be slow / fail.
+- [ ] Internal navigation via the typed `<Link>` / `useNavigate()` API — no hardcoded path strings outside the `to:` prop.
+- [ ] `src/routeTree.gen.ts` not hand-edited.

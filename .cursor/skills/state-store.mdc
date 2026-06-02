@@ -1,0 +1,97 @@
+---
+description: Add a client-only state slice using @tanstack/store + @tanstack/react-store. Use when adding global UI state, ephemeral session state, or cross-route flags that outlive a single component. Trigger phrases include "add a store", "global state for X", "useStore for ...", "auth store".
+alwaysApply: false
+---
+
+# State Store Skill (TanStack Store)
+
+The project uses **`@tanstack/store`** + **`@tanstack/react-store`** as its client store. Reach for it only for genuinely cross-route, non-server state.
+
+## 1. Confirm it is NOT server state
+
+Server data (loaded via a route loader, server function, or — once added — a query lib) belongs in the router's loader cache or the query lib. NEVER copy it into a client store.
+
+Server-state smell tests:
+
+- Is the value derived from an HTTP / RPC response? → server state.
+- Does it have a backend source of truth? → server state.
+- Will another tab need to see the same value after a refresh? → consider URL state or persistence, not the in-memory store.
+
+## 2. File layout
+
+Stores live under `src/stores/<name>.store.ts` (folder created when first added). Co-locate selectors and actions with the store; keep one concern per file.
+
+```
+src/stores/
+├── auth.store.ts            # auth-flag slice, tokens
+└── ui.store.ts              # UI flags (sidebar collapsed, theme, …)
+```
+
+## 3. Pattern
+
+```ts
+// src/stores/auth.store.ts
+import { Store } from '@tanstack/store'
+
+export type AuthState = {
+  isAuthenticated: boolean
+  userId: string | null
+}
+
+const _initialState: AuthState = {
+  isAuthenticated: false,
+  userId: null,
+}
+
+export const authStore = new Store<AuthState>(_initialState)
+
+export function setAuthenticated(userId: string) {
+  authStore.setState((s) => ({ ...s, isAuthenticated: true, userId }))
+}
+
+export function clearAuth() {
+  authStore.setState(() => _initialState)
+}
+
+export const selectIsAuthenticated = (state: AuthState) => state.isAuthenticated
+export const selectUserId = (state: AuthState) => state.userId
+```
+
+```tsx
+// in a component
+import { useStore } from '@tanstack/react-store'
+import { authStore, selectIsAuthenticated } from '#/stores/auth.store'
+
+export function HeaderActions() {
+  const isAuthenticated = useStore(authStore, selectIsAuthenticated)
+  // …
+}
+```
+
+Rules followed:
+
+- The `Store` is the single instance for that slice — exported as a `const`.
+- Selectors are named `select*` and exported alongside the store.
+- Mutations are exported functions (`setAuthenticated`, `clearAuth`); components NEVER call `store.setState` directly.
+- The initial state is a private `_`-prefixed module constant.
+
+## 4. Persistence
+
+If a slice must survive refresh:
+
+- Read `localStorage` through a thin helper (e.g., `src/lib/storage.ts` — create when needed; one place wraps `localStorage.getItem` / `setItem` with typed generics).
+- Hydrate the store on first import (`if (typeof window !== 'undefined')` — TanStack Start renders on the server too, so guard browser APIs).
+- Persist on every relevant mutation. Version the persisted shape (`{ v: 1, data: … }`) to handle migrations later.
+
+## 5. Tests
+
+- Test reducers / mutation functions directly (no React tree needed).
+- Test selectors with a hand-built state literal.
+- Don't test `useStore` itself — that's the library's job.
+
+## Constraints
+
+- No fetching inside store mutations.
+- No business logic — mutations are setters and small derivations.
+- Don't introduce Redux, Zustand, Jotai, or any other client state library; `@tanstack/store` is the chosen one and is sufficient for this project.
+- Server-rendered code paths must guard `window` / `localStorage` access (TanStack Start runs on the server).

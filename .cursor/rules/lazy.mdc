@@ -1,0 +1,84 @@
+---
+description: Code-splitting and lazy-loading conventions. Read before adding heavy components (charts, rich editors, large modal trees) or wondering whether routes need manual splitting.
+globs:
+  - "src/**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Lazy Loading
+
+## TL;DR
+
+- **Routes are already lazy.** Do NOT add `.lazy.tsx` files, `lazyRouteComponent()`, or `React.lazy()` to route files — TanStack Start splits them automatically.
+- For **heavy non-route components** (charts, rich editors, syntax highlighters, large modal trees, anything you don't want in the initial route chunk): wrap `React.lazy()` with `<LazyBoundary>` from `#/components/lazy-boundary`.
+- All loading UIs use `<LoadingFallback />` from `#/components/loading-fallback` so the project has one consistent skeleton.
+
+## Why routes don't need manual splitting
+
+TanStack Start's Vite plugin always wires `tanStackRouterCodeSplitter` into the pipeline for both client and server environments — the `autoCodeSplitting` flag is even omitted from Start's user-facing config schema because it's force-enabled (`@tanstack/start-plugin-core/src/schema.ts`, `vite/start-router-plugin/plugin.ts`). Every route file's `component`, `errorComponent`, `pendingComponent`, and `notFoundComponent` is emitted as a separate async chunk loaded on demand. Combined with `defaultPreload: 'intent'` in `src/router.tsx`, route chunks also preload on link hover.
+
+If you ever see someone reach for `.lazy.tsx` in this project, push back — it's redundant here and breaks the framework's expectations.
+
+## Route transition UI
+
+`src/router.tsx` sets `defaultPendingComponent: () => <LoadingFallback variant="page" />`. With the framework defaults (`defaultPendingMs: 1000`, `defaultPendingMinMs: 500`), the loading screen only appears for slow navigations and is debounced so it doesn't flash on fast ones.
+
+A specific route MAY override this when it has a different loading aesthetic:
+
+```tsx
+export const Route = createFileRoute('/posts/$postId')({
+  loader: ({ params }) => fetchPost(params.postId),
+  pendingComponent: () => <LoadingFallback variant="page" label="Loading post…" />,
+  component: PostPage,
+})
+```
+
+## Heavy non-route components
+
+Use `React.lazy()` to code-split the import, then wrap with `<LazyBoundary>`:
+
+```tsx
+import { lazy } from 'react'
+import { LazyBoundary } from '#/components/lazy-boundary'
+
+const RichEditor = lazy(() => import('./rich-editor'))
+
+export function PostForm() {
+  return (
+    <LazyBoundary>
+      <RichEditor />
+    </LazyBoundary>
+  )
+}
+```
+
+For a **named** export, normalize to a default in the factory:
+
+```tsx
+const Chart = lazy(() => import('./chart').then((m) => ({ default: m.Chart })))
+```
+
+A single `<LazyBoundary>` may wrap multiple lazy children — they share the same fallback and resolve together.
+
+## When NOT to lazy-load
+
+- Small, frequently-used components (buttons, inputs, icons) — the overhead exceeds the savings.
+- Anything imported by the root route or by every page — it ends up in the main chunk anyway.
+- shadcn primitives in `src/components/ui/*` — keep them statically imported; they're tiny and shared.
+
+## When to override the default fallback
+
+Pass a custom `fallback` to `<LazyBoundary>` only when the default loader looks wrong in context (e.g., the heavy component should be replaced by a skeleton that matches its layout, not a spinner). Otherwise leave the default — consistency wins.
+
+## Public API
+
+- `LoadingFallback` — `#/components/loading-fallback`. Props: `variant: 'inline' | 'page'`, `label`, `className`.
+- `LazyBoundary` — `#/components/lazy-boundary`. Props: `children`, `fallback?`, `variant?`, `label?`.
+- `defaultPendingComponent` — set once in `src/router.tsx`; do not duplicate per route unless the loading copy must change.
+
+## Anti-patterns
+
+- `import { lazyRouteComponent } from '@tanstack/react-router'` in a route file — redundant.
+- Hand-rolled `<div className="animate-spin" />` markers — use `<LoadingFallback />` instead.
+- Wrapping `<Suspense>` directly instead of `<LazyBoundary>` — bypasses the shared themed fallback. Override the fallback prop on `<LazyBoundary>` if you need something custom.
+- Lazy-loading `src/components/ui/*` (shadcn primitives) — they're already light and shared.

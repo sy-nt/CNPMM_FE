@@ -1,0 +1,35 @@
+---
+description: Run the project's Vitest suite and analyze failures. Use when verifying changes, debugging test failures, or before opening a PR. Trigger phrases include "run tests", "verify with tests", "fix failing test", "run vitest".
+alwaysApply: false
+---
+
+# Test Runner Skill
+
+## Commands (only what exists in `package.json`)
+
+- Unit tests: `yarn test` (runs `vitest run` once — non-watch).
+- Single file: `yarn test path/to/file.test.tsx` (Vitest accepts file globs as positional arguments).
+- Watch mode: `yarn test --watch` (or invoke `yarn vitest` directly — `vitest` defaults to watch).
+- Type check: `yarn tsc --noEmit` (no script alias for it; the `typescript` compiler is a devDependency).
+- Lint: `yarn lint`.
+- Format check: `yarn check`.
+
+There is **no** E2E runner configured. Do not invent `yarn e2e`.
+
+## Workflow
+
+1. Run `yarn test`. If it fails, stop and read each failure: assertion message + stack.
+2. Classify the failure:
+   - **Code bug** — the production code is wrong; fix it.
+   - **Test bug** — the assertion or setup is wrong; fix the test.
+   - **Flake** — non-deterministic. Quarantine with a TODO comment carrying an owner; do NOT silence with `.skip` and forget.
+3. Re-run only the failing file until green: `yarn test src/lib/utils.test.ts`.
+4. After per-file green, re-run the full suite once.
+5. Run `yarn lint` and `yarn tsc --noEmit` before declaring success.
+
+## Anti-patterns
+
+- Skipping tests with `.skip` / `it.skip` without an attached `// TODO(@owner): reason`.
+- Mocking the unit under test.
+- Running `yarn dev` or `yarn build` to "verify" a change instead of `yarn tsc --noEmit` + `yarn lint` + `yarn test`.
+- Adding a snapshot test for behaviour that should be asserted on observable DOM state instead.

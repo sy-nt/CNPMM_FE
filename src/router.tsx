@@ -1,5 +1,7 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
+import { LoadingFallback } from '#/components/loading-fallback'
+import { NotFoundPage } from '#/pages/errors/not-found-page'
 
 export function getRouter() {
   const router = createTanStackRouter({
@@ -7,6 +9,8 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,
+    defaultPendingComponent: () => <LoadingFallback variant="page" />,
+    defaultNotFoundComponent: NotFoundPage,
   })
 
   return router

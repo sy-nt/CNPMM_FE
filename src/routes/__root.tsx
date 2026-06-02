@@ -1,11 +1,32 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import type { ReactNode } from 'react'
-
-import { AuthProvider } from '@/features/auth/AuthProvider'
 
 import appCss from '../styles.css?url'
+
+import { AuthBootstrap } from '#/components/auth/auth-bootstrap'
+import { ThemeProvider } from '#/components/theme-provider'
+import { Toaster } from '#/components/ui/sonner'
+import { THEME_STORAGE_KEY } from '#/stores/theme.store'
+
+// Runs synchronously in <head> before React hydrates so the correct theme
+// class is on <html> on the very first paint — avoids the dark/light flash.
+const _themeBootScript = `
+(function () {
+  try {
+    var key = ${JSON.stringify(THEME_STORAGE_KEY)};
+    var stored = window.localStorage.getItem(key);
+    var theme =
+      stored === 'light' || stored === 'dark'
+        ? stored
+        : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var root = document.documentElement;
+    root.classList.toggle('dark', theme === 'dark');
+    root.dataset.theme = theme;
+    root.style.colorScheme = theme;
+  } catch (e) {}
+})();
+`.trim()
 
 export const Route = createRootRoute({
   head: () => ({
@@ -18,7 +39,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Auxila',
+        title: 'TanStack Start Starter',
       },
     ],
     links: [
@@ -31,14 +52,19 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 })
 
-function RootDocument({ children }: { children: ReactNode }) {
+function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: _themeBootScript }} />
       </head>
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <ThemeProvider>
+          <AuthBootstrap />
+          {children}
+          <Toaster richColors closeButton position="top-right" />
+        </ThemeProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',

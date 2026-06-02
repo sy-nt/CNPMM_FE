@@ -1,0 +1,53 @@
+---
+description: Review staged or working-tree changes against project rules before commit. Use when finalizing a change, preparing a PR, or asked to "review my changes" / "review the diff" / "review this PR".
+alwaysApply: false
+---
+
+# Review Changes Skill
+
+## Pre-flight
+
+Run before reading diffs:
+
+- `git status` — what's staged vs unstaged
+- `git diff --staged` and `git diff` — see all changes
+- `yarn tsc --noEmit` — type clean?
+- `yarn lint` — lint clean?
+- `yarn check` — Prettier clean?
+- `yarn test` — green?
+
+If any of these fail, fix first; review starts from a clean baseline.
+
+## Checklist (block on red)
+
+- [ ] Every new exported function / hook / component has explicit input and output types.
+- [ ] No `any`, no non-null `!`, no default exports outside framework-required spots (TanStack Router file-based routes use `export const Route`).
+- [ ] No magic numbers / strings — meaningful literals live in a `constants.ts` or alongside their schema.
+- [ ] Layer boundaries respected: `lib/` doesn't import from `routes/`, `components/`, or `hooks/`; `components/ui/*` doesn't import from feature components.
+- [ ] Type-only imports use `import type { … }` (verbatimModuleSyntax is on).
+- [ ] Path aliases consistent in each file (don't mix `#/` and `@/`).
+- [ ] Class names merged with `cn()` — no manual string concatenation of Tailwind classes.
+- [ ] Token utilities preferred over arbitrary hex (use `bg-background`, `text-foreground`, `border-border`, brand `var(--…)` over `#173a40`).
+- [ ] External boundary inputs validated with Zod (form submits, server-function payloads, search-params).
+- [ ] No floating promises. No swallowed errors. Catch payloads typed as `unknown` and narrowed.
+- [ ] `src/routeTree.gen.ts` not edited by hand.
+- [ ] Route paths referenced via the typed `<Link to=...>` / `useNavigate()` API, not retyped strings.
+- [ ] No new dependency added without justification (and the version is a real released version, not invented).
+- [ ] Tests cover the change (happy path + ≥ 1 edge case) when the change has logic worth testing.
+
+## Output format
+
+For each finding:
+
+- 🔴 Critical — must fix before merge (anything in the checklist above)
+- 🟡 Suggestion — would improve clarity, performance, or symmetry with existing code
+- 🟢 Nit — optional polish
+
+Each finding cites: file path, line(s), the problem, the suggested fix.
+
+## Verify before reporting
+
+- `yarn tsc --noEmit` clean
+- `yarn lint` clean
+- `yarn check` clean
+- Touched files only — don't expand scope.

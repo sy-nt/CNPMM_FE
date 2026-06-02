@@ -1,29 +1,69 @@
-# Style Rules (TypeScript + React)
+---
+description: Naming, imports, comments, and formatting conventions for the whole repository.
+alwaysApply: true
+---
 
-## General
-- Keep changes small and scoped; avoid speculative abstraction.
-- Follow existing naming and folder conventions before adding new patterns.
-- Prefer explicit types at module boundaries (service contracts, storage contracts).
+# Style
 
-## React Components
-- Keep presentational shared components in `src/components/ui`.
-- Keep feature-specific components under `src/components/<feature>`.
-- Avoid business side effects in reusable UI primitives.
+Prettier (`prettier.config.js`: `semi: false`, `singleQuote: true`, `trailingComma: 'all'`) and ESLint (`eslint.config.js`, `@tanstack/eslint-config`) are the source of truth. Don't fight them; align new code so `yarn lint` and `yarn check` pass.
 
-## Services and Data
-- API calls go through `src/services/api-client.ts`.
-- Keep DTO/type definitions in `src/services/*/types.ts` or `src/services/types.ts`.
-- Convert external responses in service/feature layers, not in route definitions.
+## Files & folders
 
-## Validation
-- Use Yup schemas in `src/features/<feature>/validation`.
-- Validate form payloads before triggering async actions.
+- TypeScript files: **kebab-case** (`use-table-params.ts`, `auth-card.tsx`).
+- Route files follow TanStack Router file-based conventions: `index.tsx`, `__root.tsx`, `posts.$postId.tsx`, `_layout.tsx`. Don't rename these to camelCase.
+- Generated files (`src/routeTree.gen.ts`) are off-limits — the router plugin owns them.
+- One concept per file; the filename reflects the primary export.
+
+## Functions
+
+- Do one thing — if the name contains "and", split it.
+- Keep functions short; extract private helpers (prefixed `_`) when a function grows past ~45 lines (excluding blanks/comments).
+- Pure where possible; side effects pushed to edges (route loaders, server functions, mutation handlers).
+
+## Comments
+
+- Only explain non-obvious **why**, trade-offs, or constraints.
+- NEVER narrate **what** the code does (e.g., `// fetch data`, `// loop through items` — forbidden).
+- TODO comments have an owner: `// TODO(@handle): reason`.
+- JSDoc only for shared hooks/components reused across routes (with `@example` where helpful).
 
 ## Imports
-- Use aliases (`@/*`, `@ui/*`) consistently.
-- Keep import order stable: external libs, internal aliases, local relatives.
-- Do not add new path aliases without strong need.
 
-## Tests and Checks
-- For behavior changes, run lint/tests relevant to touched modules.
-- Do not start dev servers as part of verification unless explicitly requested.
+- `verbatimModuleSyntax: true` is enabled in `tsconfig.json` → all type-only imports MUST use `import type { … }`. Mixed value + type from the same module is fine if both are needed.
+- Drop dead imports before committing.
+- No deep relative paths (`../../..`); use the project's path aliases.
+  - **Prefer `#/*`** for new imports — it matches `components.json`, `package.json` `imports`, and `tsconfig.json` `paths`. shadcn-generated code writes `#/`.
+  - `@/*` is also configured in `tsconfig.json` and acceptable. **Don't mix `#/` and `@/` in the same file** — match what the file already uses.
+- The TanStack ESLint config disables `import/order`, `import/no-cycle`, and `sort-imports` (see `eslint.config.js`); Prettier handles spacing and quotes. Imports won't be auto-reordered, so keep them grouped manually: external packages → aliased project imports → relative imports → side-effect (`import './foo.css'`) imports.
+
+## Constants
+
+- All magic literals → a `constants.ts` (module-local first, package-shared next, `src/lib/constants.ts` last).
+- Constant names: `SCREAMING_SNAKE_CASE` (`MAX_RETRIES`, `REQUEST_TIMEOUT_MS`).
+- Reusable column projections / option sets used in more than one module → constants file with `as const`.
+
+## Logging
+
+- Structured logs only. No `console.log` in committed code. `console.warn` / `console.error` are allowed for genuinely unexpected failures and dev-only debugging.
+- User-visible failures are surfaced via UI feedback (e.g., shadcn `Sonner` / `toast` once added) — not `console.error`.
+
+## Tailwind class composition
+
+- Always merge classes with `cn()` from `#/lib/utils`. Never string-concatenate Tailwind class names manually.
+- Tailwind class order is auto-handled by `prettier` (the TanStack ESLint config does not override Prettier's class sorting). Don't hand-sort.
+- Prefer **token utilities** (`bg-background`, `text-foreground`, `border-border`, `text-primary`) over arbitrary hex (`bg-[#173a40]`). Tokens live in `src/styles.css`.
+
+## Commits (convention — not currently enforced by hooks)
+
+- Conventional Commits: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+- Type + scope: lower-case (e.g., `feat(auth): add login route`).
+- Subject required, no trailing period.
+- Body / footer must be preceded by a blank line.
+
+## Pre-commit (when added)
+
+This repo has no pre-commit hook today. If one is introduced, the recommended runs on staged files are:
+
+- `*.{ts,tsx}` → `yarn tsc --noEmit`
+- `*.{js,jsx,ts,tsx}` → `eslint --fix`
+- `*.{js,jsx,ts,tsx,json,css,md,yml,yaml}` → `prettier --write`

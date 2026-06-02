@@ -1,0 +1,69 @@
+---
+description: Test runner conventions for Vitest + Testing Library.
+globs:
+  - "src/**/*.test.{ts,tsx}"
+  - "src/**/*.spec.{ts,tsx}"
+alwaysApply: true
+---
+
+# Testing
+
+## Toolchain (verified in `package.json`)
+
+- Runner: **Vitest 4** (`vitest run` via `yarn test`).
+- DOM: **`jsdom`**.
+- Library: **`@testing-library/react` 16** + **`@testing-library/dom` 10**.
+- There is **no** `vitest.config.{ts,mts}` and **no** setup file in this repo — Vitest reads `vite.config.ts` and uses defaults. When the first test is added, set up the standard pattern below.
+
+## Recommended bootstrap (when adding the first test)
+
+1. Add `vitest.config.ts` only if a custom environment / setup is needed; otherwise the existing `vite.config.ts` is fine.
+2. Create `src/test-setup.ts` registering `'@testing-library/jest-dom/vitest'` once.
+3. Reference it from the Vitest config: `test: { environment: 'jsdom', setupFiles: ['./src/test-setup.ts'], globals: false }`.
+4. Tests are **co-located** with their subject: `foo.test.ts(x)` next to `foo.ts(x)`.
+
+## Template
+
+```tsx
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { Subject } from './subject'
+
+describe('Subject', () => {
+  beforeEach(() => {})
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('renders the expected role', () => {
+    render(<Subject label="copy" />)
+    expect(screen.getByRole('button', { name: /copy/i })).toBeEnabled()
+  })
+})
+```
+
+## Conventions
+
+- Always `cleanup()` in `afterEach` when `globals: false` (RTL doesn't auto-cleanup in non-globals mode).
+- Reset mocks per test in `beforeEach` (`vi.fn()`, `vi.spyOn(...)`, `mockFn.mockClear()`).
+- Query with **role-based** selectors (`screen.getByRole('button', { name: /copy/i })`). Reserve `getByText` for non-interactive content.
+- For async UI, wrap assertions in `waitFor(() => ...)`; pass `{ timeout }` only when the default isn't enough.
+- Mock browser APIs at the boundary: `Object.assign(navigator, { clipboard: { writeText: vi.fn() } })`.
+- For pure logic (formatters, schemas, mappers, the `cn` helper), test exports directly — no React tree needed.
+
+## What to test
+
+- Pure utilities in `src/lib/*` (e.g., `cn`, future formatters / mappers / Zod schemas).
+- Shared composite components in `src/components/<area>/` that own behaviour (controlled inputs, copy actions, pagination).
+- Loaders / server-function logic that has branching business rules — extract the branching into a pure helper and test the helper.
+
+## What NOT to test
+
+- shadcn primitives in `src/components/ui/` — covered upstream by Radix and shadcn.
+- TanStack Router internals or `routeTree.gen.ts`.
+- Snapshot-only tests; assert observable behaviour (text in DOM, calls to mocks, `aria-*`, disabled states).
+
+## E2E
+
+No E2E runner is installed today (no Playwright, no Cypress in `package.json`). When E2E tests are added, do not introduce two runners — pick one.

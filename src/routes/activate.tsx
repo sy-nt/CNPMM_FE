@@ -1,21 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Suspense, lazy } from 'react'
+import { z } from 'zod'
 
-import { RouteLoader } from '@/components/auth/RouteLoader'
+import { ActivateAccountPage } from '#/pages/auth/activate-account/activate-account-page'
 
-const ActivateAccountPage = lazy(async () => {
-  const module = await import('@/features/auth/pages/ActivateAccountPage')
-  return { default: module.ActivateAccountPage }
+const _searchSchema = z.object({
+  token: z.string().optional(),
 })
 
-function ActivateRouteComponent() {
-  return (
-    <Suspense fallback={<RouteLoader />}>
-      <ActivateAccountPage />
-    </Suspense>
-  )
-}
-
 export const Route = createFileRoute('/activate')({
-  component: ActivateRouteComponent,
+  validateSearch: (search) => _searchSchema.parse(search),
+  component: ActivateAccountPage,
 })

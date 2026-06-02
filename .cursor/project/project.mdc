@@ -1,33 +1,97 @@
-# Project Constraints (FE)
+---
+description: Top-level project context for the CNPM Fe frontend. Read this first before any task.
+alwaysApply: true
+---
 
-## Scope
-- Stack: React + TypeScript + TanStack Router + Redux Toolkit + Axios + Yup.
-- Architecture type: single frontend app (not microservices, not DDD, no event bus).
+# CNPM Fe — Project Profile
 
-## Enforced File Structure
-- `src/routes`: route registration files only (`createFileRoute`, `lazy`, guards).
-- `src/features/<feature>`: feature logic only (pages/hooks/states/validation).
-- `src/components/ui`: shared, reusable, feature-agnostic UI primitives only.
-- `src/components/<feature>`: feature-specific components (example: `src/components/auth`).
-- `src/services`: API client + domain service modules (`auth`, `user`, shared API types).
-- `src/storage`: browser storage wrappers (`localStorage`/`sessionStorage`) and related types.
-- `src/lib`: pure stateless utilities (no storage/network/business state).
-- `src/common`: cross-feature helpers/schema used by multiple features.
-- `src/store`: Redux store setup and typed hooks.
-- `src/utils`: pure utility helpers that do not belong to a specific feature.
+A frontend app scaffolded with TanStack Start (file-based router on Vite, React 19) for the CNPM (software engineering project) coursework. The project is at an early stage — most feature code was reset; the live tree currently contains only the router shell, root layout, and a single index route.
 
-## Hard Rules
-- Never place feature-specific components in `src/components/ui`.
-- Never place storage handlers in `src/lib`; put them in `src/storage`.
-- Never call HTTP clients directly from route files; route files must delegate to pages/services.
-- Never import from `src/routes` into features/components/services.
-- Keep `src/routeTree.gen.ts` generated-only; do not hand-edit.
+## Tech Stack (source of truth: `package.json`)
 
-## Dependency Direction
-- Allowed flow: `routes -> features/components -> services/storage/lib/common`.
-- `services` may depend on `storage` and shared `types`, but not on feature pages/components.
-- `components/ui` must not import from `features/*`.
+- **Build**: Vite 8 (config: `vite.config.ts`) with the TanStack Start plugin (`@tanstack/react-start/plugin/vite`), `@tanstack/router-plugin`, `@tailwindcss/vite`, `@tanstack/devtools-vite`
+- **Runtime**: React 19, TypeScript 6, ESM (`"type": "module"`)
+- **Package manager**: yarn 4 (Berry, `packageManager: yarn@4.15.0`) — `yarn.lock` is the source of truth. `.yarn/releases/yarn-4.15.0.cjs` is checked in.
+- **Routing**: `@tanstack/react-router` with **file-based routing** under `src/routes/`. The route tree is generated into `src/routeTree.gen.ts` by the router plugin (do NOT edit the generated file by hand).
+- **Server / SSR**: `@tanstack/react-start` (TanStack Start) — supports server functions and SSR. Bootstrap router lives in `src/router.tsx`.
+- **State**: client → `@tanstack/store` + `@tanstack/react-store`. Server-state cache library is **not** installed; data fetching is via router loaders / server functions until a query lib is added.
+- **Forms**: `@tanstack/react-form` + `zod` v4 for schemas (no `react-hook-form` — do not introduce it).
+- **UI / styling**: Tailwind CSS v4 (via `@tailwindcss/vite` and `@import 'tailwindcss'` in `src/styles.css`) + `tw-animate-css`. **shadcn/ui is configured** in `components.json` (`style: "new-york"`, `baseColor: "zinc"`, `iconLibrary: "lucide"`) but no primitives have been generated yet — the `src/components/ui` folder will be created by the first `shadcn add`.
+- **Class merger**: `cn()` exported from `src/lib/utils.ts` (uses `clsx` + `tailwind-merge`). Always merge classes through `cn()`.
+- **Icons**: `lucide-react`.
+- **Tests**: Vitest 4 + `@testing-library/react` + `@testing-library/dom` + `jsdom`. There is no `vitest.config.*` and no setup file checked in — Vitest reads from `vite.config.ts` and uses defaults until those are added.
+- **Lint / format**: ESLint 9 (flat config) extending `@tanstack/eslint-config` + Prettier 3 (`prettier.config.js`: `semi: false`, `singleQuote: true`, `trailingComma: 'all'`).
+- **Git hooks / CI / commitlint**: not configured in this repo.
 
-## Change Policy
-- Prefer modifying existing modules before adding new abstractions.
-- New folders/files must follow the structure above; if unsure, stop and ask.
+## Entry Points
+
+- `src/router.tsx` — `getRouter()` creates the TanStack Router (`scrollRestoration`, `defaultPreload: 'intent'`, `defaultPreloadStaleTime: 0`). Augments the `@tanstack/react-router` `Register` interface so route types are global.
+- `src/routes/__root.tsx` — root route. Owns `<head>` (meta, title, stylesheet link to `../styles.css?url`), the HTML shell (`shellComponent: RootDocument`), the `<TanStackDevtools>` panel, and `<Scripts />`.
+- `src/routes/index.tsx` — `/` route (file-based via `createFileRoute`).
+- `src/routeTree.gen.ts` — **generated** route tree. Do NOT edit. Re-runs on `dev` / `build` via the router plugin.
+- `src/styles.css` — Tailwind v4 entry, custom design tokens (`--sea-ink`, `--lagoon`, `--palm`, `--sand`, …), `oklch()` colour scale, dark-mode tokens under `.dark`, and the `@theme inline` block that maps tokens to Tailwind utility classes.
+- `src/lib/utils.ts` — `cn()` helper.
+
+## Path Aliases
+
+Both aliases resolve to `./src/*`:
+
+| Alias | Configured in | Use for |
+|---|---|---|
+| `#/*` | `package.json` `imports`, `tsconfig.json` `paths`, **`components.json` aliases** | Preferred — this is what shadcn writes. New code SHOULD use `#/`. |
+| `@/*` | `tsconfig.json` `paths` | Legacy / IDE-friendly. Acceptable in handwritten code; do not mix in the same file. |
+
+Always use one of the aliases. Never use deep relative paths (`../../..`).
+
+## Scripts (ONLY scripts from `package.json` — never invent commands)
+
+```
+yarn dev       # vite dev --port 5173
+yarn build     # vite build
+yarn preview   # vite preview
+yarn test      # vitest run
+yarn lint      # eslint
+yarn format    # prettier --write . && eslint --fix
+yarn check     # prettier --check .
+```
+
+There is **no** `type-check` script. For TypeScript verification, run `yarn tsc --noEmit` (the compiler is a project devDependency).
+
+Do NOT run `dev` / `build` proactively — assume the user is already running them. Use `yarn lint`, `yarn check`, and `yarn tsc --noEmit` to verify changes.
+
+## Adding shadcn primitives
+
+`components.json` is configured. Add primitives with the latest shadcn CLI (yarn equivalent of the workspace `.cursorrules` pnpm command):
+
+```bash
+yarn dlx shadcn@latest add button
+```
+
+Generated primitives land in `src/components/ui/`. Aliases resolved by shadcn: `components → #/components`, `ui → #/components/ui`, `utils → #/lib/utils`, `lib → #/lib`, `hooks → #/hooks`. The `cn` import shadcn writes is `import { cn } from '#/lib/utils'`.
+
+## Where to Look First
+
+| If you need to… | Go to |
+|---|---|
+| Add a route | Create a new `src/routes/<path>.tsx` (file-based) — the router plugin regenerates `routeTree.gen.ts` |
+| Edit the HTML shell / global `<head>` | `src/routes/__root.tsx` |
+| Edit global tokens / Tailwind theme | `src/styles.css` (`:root`, `.dark`, `@theme inline`) |
+| Add a UI primitive | `yarn dlx shadcn@latest add <name>` → lands in `src/components/ui/` |
+| Add a shared composite component | `src/components/<name>.tsx` (folder created when first added) |
+| Touch the class-merge helper | `src/lib/utils.ts` |
+| Configure router options | `src/router.tsx` |
+
+## Local Workspace Hygiene
+
+- `.cursor/` STAYS tracked in git — it ships project intelligence and must be reviewed.
+- `.gitignore` already excludes `node_modules`, `dist`, `.tanstack`, `.nitro`, `.vinxi`, `.output`, `.wrangler`, `.env`, `*.local`.
+- `.env` is git-ignored — environment keys are project-local. Do NOT commit it.
+
+## Do NOT
+
+- Introduce a new framework, router, validator, ORM, state library, form library, or component kit when an equivalent is already installed (TanStack Router/Start/Store/Form, Zod, Tailwind v4, shadcn, lucide-react are the picks).
+- Hand-edit `src/routeTree.gen.ts` — it is regenerated by `@tanstack/router-plugin`.
+- Hardcode tokens (hex colours, spacing scales) when a CSS variable already exists in `src/styles.css`.
+- Bypass `cn()` by string-concatenating class names.
+- Mix `#/` and `@/` aliases in the same import block — pick the one in use elsewhere in the file.
+- Call `process.env` directly in client code — read Vite env via `import.meta.env`.

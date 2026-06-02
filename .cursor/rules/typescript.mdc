@@ -1,0 +1,101 @@
+---
+description: TypeScript-specific rules. Applies to all .ts and .tsx files.
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+alwaysApply: false
+---
+
+# TypeScript Rules
+
+## tsconfig (current state — `tsconfig.json`)
+
+Already enabled:
+
+- `strict: true`
+- `verbatimModuleSyntax: true` → **all type-only imports must use `import type { … }`**
+- `noUnusedLocals: true`, `noUnusedParameters: true` (prefix intentionally-unused with `_`)
+- `noFallthroughCasesInSwitch: true`
+- `noUncheckedSideEffectImports: true`
+- `module: ESNext`, `moduleResolution: bundler`, `target: ES2022`
+- `jsx: react-jsx`
+- Path aliases `#/*` and `@/*` both → `./src/*`
+
+Strongly recommended to add when convenient (currently absent):
+
+- `noUncheckedIndexedAccess: true`
+- `noImplicitOverride: true`
+- `exactOptionalPropertyTypes: true`
+- `useUnknownInCatchVariables: true` (enabled implicitly under `strict` in TS 4.4+ — verified: this project sets `strict: true`)
+
+## Forbidden
+
+- `any` — use `unknown` and narrow.
+- Non-null assertion `!` — use type guards or explicit checks.
+- `as` casts, except for: `as const` literal narrowing, narrowing inside a type guard, `satisfies`-friendly type-system workarounds (clearly commented). `as unknown as T` only when truly needed at a boundary you can't refactor.
+- Default exports, except where the framework requires them. **TanStack Router file-based routes use `export const Route = createFileRoute(...)({ … })`** — do not add a default export to route files.
+- `enum` — use the `as const` object map + a `(typeof X)[keyof typeof X]` union.
+
+### `as const` instead of `enum`
+
+```ts
+export const VaultStatus = {
+  DRAFT: 'draft',
+  LOCKED: 'locked',
+  ACTIVE: 'active',
+} as const
+
+export type VaultStatusType = (typeof VaultStatus)[keyof typeof VaultStatus]
+```
+
+## Preferred
+
+- `unknown` for untrusted boundaries (loader inputs, server-function payloads, fetch responses).
+- `satisfies` for type-safe literals without widening.
+- `as const` for literal preservation.
+- `readonly T[]` and `Readonly<T>` for inputs that must not mutate.
+- Discriminated unions over class hierarchies for variant data.
+- Schema-first with Zod 4: define the schema, infer the type (`z.infer<typeof schema>`).
+
+## Naming
+
+- Files: kebab-case (route files follow TanStack Router conventions and may include `$`, `_`, `__`).
+- Types / Interfaces: PascalCase (no `I` prefix).
+- Variables / Functions: camelCase.
+- Private module-level helpers: `_camelCase`.
+- Constants: `SCREAMING_SNAKE_CASE`.
+- React components: PascalCase export matching the concept (filename kebab-case: `auth-card.tsx` exports `AuthCard`).
+- Prefer `interface` for shapes that may `extend`; use `type` for unions, tuples, mapped types.
+
+## Async
+
+- Always handle promise rejections.
+- No floating promises — use `void promise` or `await` it.
+- Cancellation via `AbortSignal` where the API supports it (route loaders receive an `AbortSignal` from TanStack Router — pass it through to `fetch`).
+- Don't mix `.then()` chains and `await` in the same function.
+
+## React 19 specifics
+
+- Function components only. Named exports preferred (route files require `export const Route`).
+- Hooks at the top level only — no conditional or loop hook calls.
+- Custom hooks named `use*`; hook files start with `use-`.
+- Props: destructure in the function signature; type with `type XProps = { … }` above the component.
+- No `React.FC` — type props directly.
+- `useEffect` is a last resort; prefer derived values, route loaders, and event handlers.
+- Lists need stable `key`s — never `index` when items can reorder.
+- React 19 supports `use()` for promises and built-in `Suspense` boundaries — prefer them over hand-rolled loading state where the data already lives in a route loader.
+
+## TanStack Start / Router specifics
+
+- File-based routes export `export const Route = createFileRoute('/path')({ … })`.
+- `__root.tsx` exports `createRootRoute({ … })` — owns the HTML shell, head meta, devtools wiring.
+- Loaders return typed data; access via `Route.useLoaderData()` for full inference.
+- Search params are validated with Zod via `validateSearch: zodSearchValidator(schema)` (or a pure function returning the typed shape).
+- The augmented `declare module '@tanstack/react-router'` block in `src/router.tsx` registers the router type globally; do not duplicate it in other files.
+- Server functions use `createServerFn({ method: 'GET' | 'POST' }).handler(async () => …)`; their input must be Zod-validated when accepting client data.
+
+## Catch payloads
+
+- `catch (error)` typed as `unknown`.
+- Narrow before use: `error instanceof Error ? error.message : 'Unknown error'`.
+- Never assume an error has `.error`, `.message`, or `.code` without checking.

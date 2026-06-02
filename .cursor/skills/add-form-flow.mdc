@@ -1,0 +1,189 @@
+---
+description: Build a typed form using @tanstack/react-form + Zod, optionally wired to a TanStack Start server function. Use when adding a create / edit / sign-in form. Trigger phrases include "add a form", "build a sign-in form", "form with validation", "react-form".
+alwaysApply: false
+---
+
+# Add a Form Flow Skill (`@tanstack/react-form` + Zod)
+
+The project ships `@tanstack/react-form` and `zod` v4. Do **not** introduce `react-hook-form`.
+
+## 1. Decide the surface
+
+- **Inline form** — short, lives on its own page (sign-in, contact). Pattern below.
+- **Modal form** — short, lives next to a list. Wrap in shadcn `Dialog` (install via `yarn dlx shadcn@latest add dialog`).
+- **Multi-step / page form** — split each step into its own component; share form state via the `react-form` `useForm` instance lifted to the parent.
+
+## 2. Schema first
+
+Define the Zod schema next to the form (or in `src/lib/schemas/<feature>.schema.ts` when shared):
+
+```ts
+import { z } from 'zod'
+
+export const loginSchema = z.object({
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(8, 'At least 8 characters'),
+})
+
+export type LoginInput = z.infer<typeof loginSchema>
+```
+
+Rules:
+
+- Schema is the **single source of truth**. Component types come from `z.infer<typeof schema>`.
+- Per-field error messages live in the schema (second arg to validators) — don't duplicate them in the component.
+
+## 3. Build the form
+
+```tsx
+import { useForm } from '@tanstack/react-form'
+import type { LoginInput } from '#/lib/schemas/login.schema'
+import { loginSchema } from '#/lib/schemas/login.schema'
+
+type Props = {
+  onSubmit: (values: LoginInput) => Promise<void>
+  isPending?: boolean
+}
+
+export function LoginForm({ onSubmit, isPending }: Props) {
+  const form = useForm({
+    defaultValues: { email: '', password: '' } as LoginInput,
+    validators: { onSubmit: loginSchema },
+    onSubmit: async ({ value }) => {
+      await onSubmit(value)
+    },
+  })
+
+  return (
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        void form.handleSubmit()
+      }}
+      className="space-y-4"
+    >
+      <form.Field
+        name="email"
+        validators={{ onChange: loginSchema.shape.email }}
+        children={(field) => (
+          <div className="space-y-1">
+            <label htmlFor={field.name} className="text-sm font-medium">
+              Email
+            </label>
+            <input
+              id={field.name}
+              name={field.name}
+              type="email"
+              autoComplete="email"
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+            {field.state.meta.isTouched && field.state.meta.errors.length > 0 ? (
+              <p className="text-xs text-destructive">{String(field.state.meta.errors[0])}</p>
+            ) : null}
+          </div>
+        )}
+      />
+
+      <form.Field
+        name="password"
+        validators={{ onChange: loginSchema.shape.password }}
+        children={(field) => (
+          <div className="space-y-1">
+            <label htmlFor={field.name} className="text-sm font-medium">
+              Password
+            </label>
+            <input
+              id={field.name}
+              name={field.name}
+              type="password"
+              autoComplete="current-password"
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+            {field.state.meta.isTouched && field.state.meta.errors.length > 0 ? (
+              <p className="text-xs text-destructive">{String(field.state.meta.errors[0])}</p>
+            ) : null}
+          </div>
+        )}
+      />
+
+      <button
+        type="submit"
+        disabled={isPending || form.state.isSubmitting}
+        className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+      >
+        {isPending || form.state.isSubmitting ? 'Signing in…' : 'Sign in'}
+      </button>
+    </form>
+  )
+}
+```
+
+What to notice:
+
+- `validators.onSubmit: loginSchema` runs the whole schema on submit; `onChange: loginSchema.shape.<field>` runs the per-field validator on every change.
+- The component is presentational: it receives `onSubmit` and `isPending` from the parent.
+- Token utilities (`bg-primary`, `text-primary-foreground`, `border-input`, `bg-background`) — no hex.
+
+## 4. Wire to a server function (optional)
+
+```tsx
+// route file
+import { createFileRoute } from '@tanstack/react-router'
+import { createServerFn } from '@tanstack/react-start'
+import { useState } from 'react'
+
+import { LoginForm } from './-components/login-form'
+import { loginSchema } from '#/lib/schemas/login.schema'
+
+const login = createServerFn({ method: 'POST' })
+  .validator(loginSchema.parse)
+  .handler(async ({ data }) => {
+    // call backend, set cookies, etc.
+    return { ok: true as const }
+  })
+
+export const Route = createFileRoute('/login')({ component: LoginPage })
+
+function LoginPage() {
+  const [isPending, setPending] = useState(false)
+
+  return (
+    <LoginForm
+      isPending={isPending}
+      onSubmit={async (values) => {
+        try {
+          setPending(true)
+          await login({ data: values })
+        } finally {
+          setPending(false)
+        }
+      }}
+    />
+  )
+}
+```
+
+- The server function re-validates with Zod inside `.validator(...)`. Trust nothing client-sent.
+- Co-located route components live in a `<route>.-components/` folder (the `-` prefix excludes the file from the router's automatic file-based detection while still keeping it next to the route).
+
+## 5. shadcn Form primitives (when installed)
+
+Once `yarn dlx shadcn@latest add form input label button` has been run, replace the raw `<input>` / `<label>` / `<button>` with the shadcn primitives — they bring built-in error rendering and accessible labelling. Keep the `react-form` field wiring; only swap the rendered DOM.
+
+## Acceptance checklist
+
+- [ ] Zod schema is the single source of truth; types via `z.infer`.
+- [ ] No `react-hook-form` import.
+- [ ] Form submission re-validates on the server (when a server function is involved).
+- [ ] Submit button is disabled while submitting / pending.
+- [ ] Per-field error messages come from the schema, not hardcoded in the component.
+- [ ] Token utilities used for colour / border (`bg-primary`, `border-input`, etc.).
+- [ ] No floating promises in submit handlers.

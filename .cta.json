@@ -2,7 +2,7 @@
   "projectName": "fe",
   "mode": "file-router",
   "typescript": true,
-  "packageManager": "npm",
+  "packageManager": "yarn",
   "includeExamples": false,
   "tailwind": true,
   "addOnOptions": {},
@@ -13,6 +13,9 @@
   "version": 1,
   "framework": "react",
   "chosenAddOns": [
-    "eslint"
+    "eslint",
+    "form",
+    "shadcn",
+    "store"
   ]
 }

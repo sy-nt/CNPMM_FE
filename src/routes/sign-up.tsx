@@ -1,19 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Suspense, lazy } from 'react'
 
-import { RouteLoader } from '@/components/auth/RouteLoader'
+import { ensureAnonymous } from '#/lib/auth-guards'
+import { SignUpPage } from '#/pages/auth/sign-up/sign-up-page'
 
-const SignUpPage = lazy(async () => {
-  const module = await import('@/features/auth/pages/SignUpPage')
-  return { default: module.SignUpPage }
+export const Route = createFileRoute('/sign-up')({
+  beforeLoad: ensureAnonymous,
+  component: SignUpPage,
 })
-
-function SignUpRouteComponent() {
-  return (
-    <Suspense fallback={<RouteLoader />}>
-      <SignUpPage />
-    </Suspense>
-  )
-}
-
-export const Route = createFileRoute('/sign-up')({ component: SignUpRouteComponent })
