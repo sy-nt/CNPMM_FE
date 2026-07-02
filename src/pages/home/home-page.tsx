@@ -5,13 +5,23 @@ import { CategoryShell } from '#/components/layout/category-shell'
 import { HomeFeed } from '#/pages/home/home-feed'
 import { HomeHeader } from '#/pages/home/home-header'
 import { HomePagination } from '#/pages/home/home-pagination'
+import { PlatformDiscountsSection } from '#/pages/home/platform-discounts-section'
 import { ProductSlider } from '#/pages/home/product-slider'
 
 const _routeApi = getRouteApi('/')
 
 export function HomePage() {
-  const { products, slider, search, activeCategory, page, totalPage, error } =
-    _routeApi.useLoaderData()
+  const {
+    products,
+    slider,
+    platformDiscounts,
+    claimedDiscountIds,
+    search,
+    activeCategory,
+    page,
+    totalPage,
+    error,
+  } = _routeApi.useLoaderData()
   const router = useRouter()
   const categorySlug = activeCategory?.slug
 
@@ -24,6 +34,8 @@ export function HomePage() {
   }, [router, page, totalPage, search, categorySlug])
 
   const showSlider = !search && !activeCategory && slider.length > 0
+  const showPlatformDiscounts =
+    !search && !activeCategory && platformDiscounts.length > 0
 
   return (
     <CategoryShell activeCategorySlug={categorySlug}>
@@ -44,6 +56,13 @@ export function HomePage() {
         ) : null}
 
         {showSlider ? <ProductSlider items={slider} /> : null}
+
+        {showPlatformDiscounts ? (
+          <PlatformDiscountsSection
+            discounts={platformDiscounts}
+            claimedDiscountIds={claimedDiscountIds}
+          />
+        ) : null}
 
         <HomeFeed
           products={products}

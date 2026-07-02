@@ -1,42 +1,37 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 
-import { AppShell } from '#/components/layout/app-shell'
+import { MeShell } from '#/components/layout/me-shell'
 import { LoadingFallback } from '#/components/loading-fallback'
-import { listPersonalAddresses } from '#/lib/api/address'
 import { ApiError } from '#/lib/api/client'
 import { getCurrentUser } from '#/lib/api/user'
 import { ensureAuthenticated } from '#/lib/auth-guards'
-import type { PersonalAddressList } from '#/lib/schemas/address.schema'
 import type { User } from '#/lib/schemas/user.schema'
-import { MePage } from '#/pages/me/me-page'
+import { MeHeader } from '#/pages/me/me-header'
 import { authStore } from '#/stores/auth.store'
 
-export type MeLoaderResult = {
+export type MeLayoutLoaderResult = {
   user: User
-  addresses: PersonalAddressList
 }
 
 export const Route = createFileRoute('/me')({
   beforeLoad: ensureAuthenticated,
-  component: MePage,
+  component: MeLayout,
   pendingComponent: () => (
-    <AppShell>
-      <LoadingFallback variant="inline" label="Loading your profile…" />
-    </AppShell>
+    <MeShell
+      header={<LoadingFallback variant="inline" label="Loading your account…" />}
+    >
+      <LoadingFallback variant="inline" label="Loading…" />
+    </MeShell>
   ),
-  loader: async ({ abortController }): Promise<MeLoaderResult> => {
+  loader: async ({ abortController }): Promise<MeLayoutLoaderResult> => {
     const accessToken = authStore.state.accessToken
     if (!accessToken) {
       throw redirect({ to: '/sign-in' })
     }
 
-    const signal = abortController.signal
     try {
-      const [user, addresses] = await Promise.all([
-        getCurrentUser(accessToken, signal),
-        listPersonalAddresses(accessToken, signal),
-      ])
-      return { user, addresses }
+      const user = await getCurrentUser(accessToken, abortController.signal)
+      return { user }
     } catch (error) {
       if (
         error instanceof ApiError &&
@@ -48,3 +43,13 @@ export const Route = createFileRoute('/me')({
     }
   },
 })
+
+function MeLayout() {
+  const { user } = Route.useLoaderData()
+
+  return (
+    <MeShell header={<MeHeader user={user} />}>
+      <Outlet />
+    </MeShell>
+  )
+}

@@ -1,27 +1,40 @@
 import { apiRequest } from '#/lib/api/client'
+import {
+  createPresignedUrlInputSchema,
+  presignedUrlSchema,
+} from '#/lib/schemas/image.schema'
+import type {
+  CreatePresignedUrlInput,
+  PresignedUrl,
+} from '#/lib/schemas/image.schema'
+import type { Maybe } from '#/lib/types'
 
-export type CreatePresignedUrlInput = {
-  prefix: string
-  extension: string
-  size: number
-}
-
-export type PresignedUrl = {
-  url: string
-  key: string
-  expiresIn?: number
-  headers?: Record<string, string>
-}
+export type { CreatePresignedUrlInput, PresignedUrl }
 
 export function createPresignedUrl(
+  accessToken: Maybe<string>,
+  input: CreatePresignedUrlInput,
+  signal?: AbortSignal,
+): Promise<PresignedUrl> {
+  const body = createPresignedUrlInputSchema.parse(input)
+  return apiRequest<unknown>('/image/presigned-url', {
+    method: 'POST',
+    accessToken,
+    body,
+    signal,
+  }).then((data) => presignedUrlSchema.parse(data))
+}
+
+export function createShopPresignedUrl(
   accessToken: string,
   input: CreatePresignedUrlInput,
   signal?: AbortSignal,
 ): Promise<PresignedUrl> {
-  return apiRequest<PresignedUrl>('/image/presigned-url', {
+  const body = createPresignedUrlInputSchema.parse(input)
+  return apiRequest<unknown>('/shop/image/presigned-url', {
     method: 'POST',
     accessToken,
-    body: input,
+    body,
     signal,
-  })
+  }).then((data) => presignedUrlSchema.parse(data))
 }

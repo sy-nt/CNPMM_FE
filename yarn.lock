@@ -2641,6 +2641,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/query-core@npm:5.101.0":
+  version: 5.101.0
+  resolution: "@tanstack/query-core@npm:5.101.0"
+  checksum: 10c0/e3aacbb762887214b71d8f959930644594e2321b0cdca8eac098f894cbb75d1e32d45dc34a4b818fb8c68b344398905cf30f17c69cd87283adf73e64457e9320
+  languageName: node
+  linkType: hard
+
 "@tanstack/react-devtools@npm:latest":
   version: 0.10.5
   resolution: "@tanstack/react-devtools@npm:0.10.5"
@@ -2667,6 +2674,17 @@ __metadata:
     "@tanstack/react-start":
       optional: true
   checksum: 10c0/c4856d057e51a0d37002cd2c334e50c0d6213fb814685d6f20beb5546b643879623648e82a7b84224ccd988245ab8ca6a228497d3fa608b245d5b90de8255fdc
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-query@npm:^5.101.0":
+  version: 5.101.0
+  resolution: "@tanstack/react-query@npm:5.101.0"
+  dependencies:
+    "@tanstack/query-core": "npm:5.101.0"
+  peerDependencies:
+    react: ^18 || ^19
+  checksum: 10c0/a86add4402c23e26cf4a8c7dade5b0198a7abfb51720b91e83cfe5db8b5ed89acb027b3d5b67882098d0c83cf50099175f8310a41fd5c4b55f6c343779c3dfb6
   languageName: node
   linkType: hard
 
@@ -4005,6 +4023,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"embla-carousel-react@npm:^8.6.0":
+  version: 8.6.0
+  resolution: "embla-carousel-react@npm:8.6.0"
+  dependencies:
+    embla-carousel: "npm:8.6.0"
+    embla-carousel-reactive-utils: "npm:8.6.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.1 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc
+  checksum: 10c0/461b0c427a6fca62e730c7b39d08e9c55b01a2138c173d5b9ebf77ec92092a900b45ac384731c77382b48d5d65946994d3abba6e9899a66d6e16f8ddf191ed1c
+  languageName: node
+  linkType: hard
+
+"embla-carousel-reactive-utils@npm:8.6.0":
+  version: 8.6.0
+  resolution: "embla-carousel-reactive-utils@npm:8.6.0"
+  peerDependencies:
+    embla-carousel: 8.6.0
+  checksum: 10c0/33d07e6df4d8dec9b4fc95858838ea2d5e5df078039c05b2a342c05ba4979d8d18564a1c607da445fed744daf969a0b5a90124ce487a854e86ced6f0458b51e9
+  languageName: node
+  linkType: hard
+
+"embla-carousel@npm:8.6.0":
+  version: 8.6.0
+  resolution: "embla-carousel@npm:8.6.0"
+  checksum: 10c0/f4c598e7be28b70340d31ffd2bebb2472db370b0c81d9b089bf9555cf618695f35dc4a0694565c994c9ab972731123063f945aa09ff485df0df761d79c6a08ef
+  languageName: node
+  linkType: hard
+
 "enhanced-resolve@npm:^5.17.1, enhanced-resolve@npm:^5.21.0":
   version: 5.22.1
   resolution: "enhanced-resolve@npm:5.22.1"
@@ -4355,6 +4401,7 @@ __metadata:
     "@tanstack/eslint-config": "npm:latest"
     "@tanstack/react-devtools": "npm:latest"
     "@tanstack/react-form": "npm:latest"
+    "@tanstack/react-query": "npm:^5.101.0"
     "@tanstack/react-router": "npm:latest"
     "@tanstack/react-router-devtools": "npm:latest"
     "@tanstack/react-router-ssr-query": "npm:latest"
@@ -4370,6 +4417,7 @@ __metadata:
     "@vitejs/plugin-react": "npm:^6.0.1"
     class-variance-authority: "npm:^0.7.1"
     clsx: "npm:^2.1.1"
+    embla-carousel-react: "npm:^8.6.0"
     eslint: "npm:^9.20.0"
     isomorphic-dompurify: "npm:^3.15.0"
     jsdom: "npm:^28.1.0"

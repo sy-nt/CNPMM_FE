@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
-import { invalidateCacheByPrefix, withCache } from '#/lib/api/cache'
 import { apiRequest } from '#/lib/api/client'
 import type { PaginationQuery } from '#/lib/api/common'
+import { CATEGORY_TREE_DEPTH } from '#/lib/api/category.constants'
 import {
   categoryListResponseSchema,
   categoryTreeNodeSchema,
@@ -12,8 +12,8 @@ import type {
   CategoryTreeNode,
   CategoryTreeResponse,
 } from '#/lib/schemas/category.schema'
+import { findBySlug } from '#/lib/slug'
 import type { Maybe } from '#/lib/types'
-import { stableJsonKey } from '#/lib/utils'
 
 export type CategoryListQuery = PaginationQuery<
   'createdAt' | 'updatedAt' | 'displayOrder' | 'name'
@@ -40,8 +40,6 @@ export type UpdateCategoryInput = {
   parentId?: string | null
 }
 
-const CATEGORY_CACHE_PREFIX = 'category:'
-
 const _categoryIndex = new Map<string, Category>()
 
 export function getCachedCategory(id: string): Category | undefined {
@@ -52,102 +50,82 @@ export function getCachedCategories(): ReadonlyArray<Category> {
   return Array.from(_categoryIndex.values())
 }
 
-export function listCategories(
+export async function listCategories(
   accessToken: Maybe<string>,
   query: CategoryListQuery = {},
   signal?: AbortSignal,
 ): Promise<ReadonlyArray<Category>> {
-  return withCache(
-    { key: `${CATEGORY_CACHE_PREFIX}list:${stableJsonKey(query)}` },
-    async (innerSignal) => {
-      const data = await apiRequest<unknown>('/categories/', {
-        method: 'GET',
-        accessToken,
-        query,
-        signal: innerSignal,
-      })
-      const parsed = categoryListResponseSchema.parse(data)
-      for (const category of parsed) _cacheCategory(category)
-      return parsed
-    },
+  const data = await apiRequest<unknown>('/categories/', {
+    method: 'GET',
+    accessToken,
+    query,
     signal,
-  )
+  })
+  const parsed = categoryListResponseSchema.parse(data)
+  for (const category of parsed.items) _cacheCategory(category)
+  return parsed.items
 }
 
-export function getCategoryTree(
+export async function getCategory(
   accessToken: Maybe<string>,
   categoryId: string,
   query: CategoryTreeQuery = {},
   signal?: AbortSignal,
 ): Promise<CategoryTreeResponse> {
-  return withCache(
+  const raw = await apiRequest<unknown>(
+    `/category/${encodeURIComponent(categoryId)}`,
     {
-      key: `${CATEGORY_CACHE_PREFIX}tree:${categoryId}:${stableJsonKey(query)}`,
+      method: 'GET',
+      accessToken,
+      query,
+      signal,
     },
-    async (innerSignal) => {
-      const raw = await apiRequest<unknown>(`/category/${categoryId}/tree`, {
-        method: 'GET',
-        accessToken,
-        query,
-        signal: innerSignal,
-      })
-      return _parseAndIndexTreeResponse(raw)
-    },
-    signal,
   )
+  return _parseAndIndexTreeResponse(raw)
 }
 
-export function invalidateCategories(): void {
-  invalidateCacheByPrefix(CATEGORY_CACHE_PREFIX)
+/** @deprecated Use {@link getCategory} — `/category/:id/tree` was removed. */
+export async function getCategoryTree(
+  accessToken: Maybe<string>,
+  categoryId: string,
+  query: CategoryTreeQuery = {},
+  signal?: AbortSignal,
+): Promise<CategoryTreeResponse> {
+  return getCategory(accessToken, categoryId, query, signal)
+}
+
+export async function resolveCategoryBySlug(
+  accessToken: Maybe<string>,
+  slug: string,
+  signal?: AbortSignal,
+): Promise<Category | null> {
+  const trimmedSlug = slug.trim()
+  if (!trimmedSlug) return null
+
+  const bySlug = (category: Category): string => category.slug
+  const cached = findBySlug(getCachedCategories(), bySlug, trimmedSlug)
+  if (cached) return cached
+
+  const roots = await listCategories(accessToken, {}, signal)
+  const fromRoots = findBySlug(roots, bySlug, trimmedSlug)
+  if (fromRoots) return fromRoots
+
+  await Promise.all(
+    roots.map((root) =>
+      getCategory(
+        accessToken,
+        root.id,
+        { depth: CATEGORY_TREE_DEPTH },
+        signal,
+      ),
+    ),
+  )
+
+  return findBySlug(getCachedCategories(), bySlug, trimmedSlug) ?? null
+}
+
+export function clearCategoryIndex(): void {
   _categoryIndex.clear()
-}
-
-export function createCategory(
-  accessToken: string,
-  input: CreateCategoryInput,
-  signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/category/', {
-    method: 'POST',
-    accessToken,
-    body: input,
-    signal,
-  }).then((response) => {
-    invalidateCategories()
-    return response
-  })
-}
-
-export function updateCategory(
-  accessToken: string,
-  categoryId: string,
-  input: UpdateCategoryInput,
-  signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest(`/category/${categoryId}`, {
-    method: 'PUT',
-    accessToken,
-    body: input,
-    signal,
-  }).then((response) => {
-    invalidateCategories()
-    return response
-  })
-}
-
-export function deleteCategory(
-  accessToken: string,
-  categoryId: string,
-  signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest(`/category/${categoryId}`, {
-    method: 'DELETE',
-    accessToken,
-    signal,
-  }).then((response) => {
-    invalidateCategories()
-    return response
-  })
 }
 
 function _parseAndIndexTreeResponse(raw: unknown): CategoryTreeResponse {

@@ -1,5 +1,10 @@
 import { apiRequest } from '#/lib/api/client'
 import type { PaginationQuery } from '#/lib/api/common'
+import {
+  warehouseListResponseSchema,
+  warehouseSchema,
+} from '#/lib/schemas/warehouse.schema'
+import type { Warehouse, WarehouseListResponse } from '#/lib/schemas/warehouse.schema'
 
 export type WarehouseListQuery = PaginationQuery<
   'createdAt' | 'updatedAt' | 'name'
@@ -21,51 +26,54 @@ export type UpdateWarehouseInput = {
   isDefault?: boolean
 }
 
-export function listWarehouses(
+export async function listWarehouses(
   accessToken: string,
   query: WarehouseListQuery = {},
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/warehouses/', {
+): Promise<WarehouseListResponse> {
+  const raw = await apiRequest<unknown>('/shop/warehouses/', {
     method: 'GET',
     accessToken,
     query,
     signal,
   })
+  return warehouseListResponseSchema.parse(raw)
 }
 
-export function getWarehouse(
+export async function getWarehouse(
   accessToken: string,
   warehouseId: string,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest(`/warehouse/${warehouseId}`, {
+): Promise<Warehouse> {
+  const raw = await apiRequest<unknown>(`/shop/warehouse/${warehouseId}`, {
     method: 'GET',
     accessToken,
     signal,
   })
+  return warehouseSchema.parse(raw)
 }
 
-export function createWarehouse(
+export async function createWarehouse(
   accessToken: string,
   input: CreateWarehouseInput,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/warehouse/', {
+): Promise<Warehouse> {
+  const raw = await apiRequest<unknown>('/shop/warehouse/', {
     method: 'POST',
     accessToken,
     body: input,
     signal,
   })
+  return warehouseSchema.parse(raw)
 }
 
-export function updateWarehouse(
+export async function updateWarehouse(
   accessToken: string,
   warehouseId: string,
   input: UpdateWarehouseInput,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest(`/warehouse/${warehouseId}`, {
+): Promise<void> {
+  await apiRequest(`/shop/warehouse/${warehouseId}`, {
     method: 'PUT',
     accessToken,
     body: input,
@@ -73,12 +81,12 @@ export function updateWarehouse(
   })
 }
 
-export function deleteWarehouse(
+export async function deleteWarehouse(
   accessToken: string,
   warehouseId: string,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest(`/warehouse/${warehouseId}`, {
+): Promise<void> {
+  await apiRequest(`/shop/warehouse/${warehouseId}`, {
     method: 'DELETE',
     accessToken,
     signal,

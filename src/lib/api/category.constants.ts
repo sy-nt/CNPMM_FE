@@ -7,6 +7,9 @@ export const CATEGORY_PAGE_SIZE = 30
 
 export const CATEGORY_TREE_DEPTH = 4
 
+/** Direct children only — used by the category sidebar drill-down. */
+export const CATEGORY_SIDEBAR_CHILDREN_DEPTH = 1
+
 export const CATEGORY_MAX_ANCESTOR_DEPTH = 50
 
 export const CATEGORY_LIST_DEFAULT_QUERY = {

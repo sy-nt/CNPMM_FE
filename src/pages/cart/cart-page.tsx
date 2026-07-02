@@ -1,167 +1,78 @@
-import { useState } from 'react'
-import { getRouteApi, useRouter } from '@tanstack/react-router'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { useStore } from '@tanstack/react-store'
-import { toast } from 'sonner'
+import { useMemo } from 'react'
 
 import { AppShell } from '#/components/layout/app-shell'
-import {
-  clearCart,
-  invalidateCart,
-  removeCartItem,
-  updateCartItemQuantity,
-} from '#/lib/api/cart'
-import { ApiError } from '#/lib/api/client'
-import { buildCartLineView, cartLineSubtotal } from '#/pages/cart/_cart-line'
-import { CartItemRow } from '#/pages/cart/cart-item-row'
+import { cartQueryOptions } from '#/lib/query/cart'
+import { buildCartLineView } from '#/pages/cart/_cart-line'
+import { groupCartLinesByShop } from '#/pages/cart/_cart-shop-group'
+import { computeCartTotals } from '#/pages/cart/_cart-totals'
+import { useCartActions } from '#/pages/cart/_use-cart-actions'
+import { useCartSelection } from '#/pages/cart/_use-cart-selection'
+import { CartPageHeader } from '#/pages/cart/cart-page-header'
+import { CartShopList } from '#/pages/cart/cart-shop-list'
 import { CartSummary } from '#/pages/cart/cart-summary'
 import { EmptyCart } from '#/pages/cart/empty-cart'
 import { authStore, selectAccessToken } from '#/stores/auth.store'
 
-const _routeApi = getRouteApi('/cart')
-
 export function CartPage() {
-  const { cart } = _routeApi.useLoaderData()
-  const router = useRouter()
   const accessToken = useStore(authStore, selectAccessToken)
-  const [pendingSkuId, setPendingSkuId] = useState<string | null>(null)
-  const [pendingAction, setPendingAction] = useState<
-    'update' | 'remove' | null
-  >(null)
-  const [isClearing, setIsClearing] = useState(false)
 
+  if (!accessToken) {
+    throw new Error('Cart requires an authenticated session.')
+  }
+
+  const { data: cart } = useSuspenseQuery(cartQueryOptions(accessToken))
   const lines = cart.items.map(buildCartLineView)
-  const itemCount = lines.reduce((acc, line) => acc + line.quantity, 0)
-  const derivedSubtotal = lines.some((line) => line.lineTotal !== null)
-    ? lines.reduce((acc, line) => acc + cartLineSubtotal(line), 0)
-    : null
-  const serverSubtotal = cart.subtotal ?? null
+  const shopGroups = useMemo(() => groupCartLinesByShop(lines), [lines])
 
-  const reload = async (): Promise<void> => {
-    invalidateCart()
-    await router.invalidate()
-  }
+  const { selectedSkuIds, selectedLines, toggleLine, toggleShop } =
+    useCartSelection(lines, shopGroups)
 
-  const handleQuantityChange = async (
-    skuId: string,
-    nextQuantity: number,
-  ): Promise<void> => {
-    if (!accessToken) return
-    if (pendingSkuId !== null) return
+  const {
+    pendingSkuId,
+    pendingAction,
+    isClearing,
+    onQuantityChange,
+    onRemove,
+    onClear,
+  } = useCartActions(accessToken, lines)
 
-    const line = lines.find((entry) => entry.skuId === skuId)
-    if (!line) return
-    if (nextQuantity === line.quantity) return
-    if (nextQuantity <= 0) {
-      await handleRemove(skuId)
-      return
-    }
-
-    setPendingSkuId(skuId)
-    setPendingAction('update')
-    try {
-      await updateCartItemQuantity(accessToken, skuId, {
-        quantity: nextQuantity,
-      })
-      await reload()
-    } catch (error) {
-      toast.error(_humaniseError(error, 'Could not update the cart item.'))
-    } finally {
-      setPendingSkuId(null)
-      setPendingAction(null)
-    }
-  }
-
-  const handleRemove = async (skuId: string): Promise<void> => {
-    if (!accessToken) return
-    if (pendingSkuId !== null) return
-
-    setPendingSkuId(skuId)
-    setPendingAction('remove')
-    try {
-      await removeCartItem(accessToken, skuId)
-      toast.success('Item removed from your cart.')
-      await reload()
-    } catch (error) {
-      toast.error(_humaniseError(error, 'Could not remove the cart item.'))
-    } finally {
-      setPendingSkuId(null)
-      setPendingAction(null)
-    }
-  }
-
-  const handleClear = async (): Promise<void> => {
-    if (!accessToken) return
-    if (isClearing) return
-
-    setIsClearing(true)
-    try {
-      await clearCart(accessToken)
-      toast.success('Cart cleared.')
-      await reload()
-    } catch (error) {
-      toast.error(_humaniseError(error, 'Could not clear the cart.'))
-    } finally {
-      setIsClearing(false)
-    }
-  }
+  const { itemCount, selectedCount, derivedSubtotal, serverSubtotal } =
+    computeCartTotals(lines, selectedLines, cart.subtotal)
 
   return (
     <AppShell>
       <section className="rise-in space-y-6">
-        <header className="space-y-1">
-          <p className="text-sm font-medium uppercase tracking-wide text-primary">
-            Cart
-          </p>
-          <h1 className="display-title text-3xl font-semibold text-foreground">
-            Your cart
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Review your items before continuing to checkout.
-          </p>
-        </header>
+        <CartPageHeader />
 
         {lines.length === 0 ? (
           <EmptyCart />
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
-            <ul className="space-y-3">
-              {lines.map((line) => (
-                <CartItemRow
-                  key={line.key}
-                  line={line}
-                  isUpdating={
-                    pendingSkuId === line.skuId && pendingAction === 'update'
-                  }
-                  isRemoving={
-                    pendingSkuId === line.skuId && pendingAction === 'remove'
-                  }
-                  onQuantityChange={(skuId, next) => {
-                    void handleQuantityChange(skuId, next)
-                  }}
-                  onRemove={(skuId) => {
-                    void handleRemove(skuId)
-                  }}
-                />
-              ))}
-            </ul>
+            <CartShopList
+              shopGroups={shopGroups}
+              selectedSkuIds={selectedSkuIds}
+              pendingSkuId={pendingSkuId}
+              pendingAction={pendingAction}
+              onToggleShop={toggleShop}
+              onToggleLine={toggleLine}
+              onQuantityChange={onQuantityChange}
+              onRemove={onRemove}
+            />
 
             <CartSummary
               itemCount={itemCount}
+              selectedCount={selectedCount}
+              selectedLines={selectedLines}
               subtotal={derivedSubtotal}
               serverSubtotal={serverSubtotal}
               isClearing={isClearing}
-              onClear={() => void handleClear()}
+              onClear={onClear}
             />
           </div>
         )}
       </section>
     </AppShell>
   )
-}
-
-function _humaniseError(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message || fallback
-  }
-  return fallback
 }

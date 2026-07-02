@@ -1,4 +1,4 @@
-const STOREFRONT_LOCALE = 'vi-VN'
+import { STOREFRONT_LOCALE } from '#/lib/datetime.constants'
 
 const STOREFRONT_CURRENCY = 'VND'
 

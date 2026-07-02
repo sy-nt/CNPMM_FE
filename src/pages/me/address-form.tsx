@@ -10,9 +10,11 @@ import { addressFormSchema } from '#/lib/schemas/address.schema'
 import type { AddressFormInput } from '#/lib/schemas/address.schema'
 
 type AddressFormProps = {
+  formId: string
   initialValues: AddressFormInput
   submitLabel: string
   pendingLabel: string
+  showCoordinates?: boolean
   onSubmit: (values: AddressFormInput) => Promise<void>
   onCancel: () => void
   errorMessage?: string | null
@@ -31,9 +33,11 @@ export const EMPTY_ADDRESS_FORM: AddressFormInput = {
 }
 
 export function AddressForm({
+  formId,
   initialValues,
   submitLabel,
   pendingLabel,
+  showCoordinates = false,
   onSubmit,
   onCancel,
   errorMessage,
@@ -62,7 +66,7 @@ export function AddressForm({
       >
         {(field) => (
           <TextField
-            id={`${field.name}-${initialValues.name || 'new'}`}
+            id={`${field.name}-${formId}`}
             name={field.name}
             label="Label"
             placeholder="Home, Office…"
@@ -80,7 +84,7 @@ export function AddressForm({
       >
         {(field) => (
           <TextField
-            id={`${field.name}-${initialValues.name || 'new'}`}
+            id={`${field.name}-${formId}`}
             name={field.name}
             label="Street address"
             placeholder="123 Main Street"
@@ -99,7 +103,7 @@ export function AddressForm({
         >
           {(field) => (
             <TextField
-              id={`${field.name}-${initialValues.name || 'new'}`}
+              id={`${field.name}-${formId}`}
               name={field.name}
               label="City"
               placeholder="Ho Chi Minh"
@@ -116,7 +120,7 @@ export function AddressForm({
         >
           {(field) => (
             <TextField
-              id={`${field.name}-${initialValues.name || 'new'}`}
+              id={`${field.name}-${formId}`}
               name={field.name}
               label="District"
               placeholder="District 1"
@@ -136,7 +140,7 @@ export function AddressForm({
         >
           {(field) => (
             <TextField
-              id={`${field.name}-${initialValues.name || 'new'}`}
+              id={`${field.name}-${formId}`}
               name={field.name}
               label="State / Province"
               placeholder="Ho Chi Minh"
@@ -153,7 +157,7 @@ export function AddressForm({
         >
           {(field) => (
             <TextField
-              id={`${field.name}-${initialValues.name || 'new'}`}
+              id={`${field.name}-${formId}`}
               name={field.name}
               label="Country"
               placeholder="Vietnam"
@@ -166,53 +170,55 @@ export function AddressForm({
         </form.Field>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <form.Field
-          name="latitude"
-          validators={{ onChange: addressFormSchema.shape.latitude }}
-        >
-          {(field) => (
-            <TextField
-              id={`${field.name}-${initialValues.name || 'new'}`}
-              name={field.name}
-              label="Latitude"
-              placeholder="10.7626"
-              value={field.state.value ?? ''}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              error={getFieldError(field.state.meta)}
-              description="Optional. Decimal degrees."
-            />
-          )}
-        </form.Field>
-        <form.Field
-          name="longitude"
-          validators={{ onChange: addressFormSchema.shape.longitude }}
-        >
-          {(field) => (
-            <TextField
-              id={`${field.name}-${initialValues.name || 'new'}`}
-              name={field.name}
-              label="Longitude"
-              placeholder="106.6602"
-              value={field.state.value ?? ''}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              error={getFieldError(field.state.meta)}
-              description="Optional. Decimal degrees."
-            />
-          )}
-        </form.Field>
-      </div>
+      {showCoordinates ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <form.Field
+            name="latitude"
+            validators={{ onChange: addressFormSchema.shape.latitude }}
+          >
+            {(field) => (
+              <TextField
+                id={`${field.name}-${formId}`}
+                name={field.name}
+                label="Latitude"
+                placeholder="10.7626"
+                value={field.state.value ?? ''}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+                error={getFieldError(field.state.meta)}
+                description="Optional. Decimal degrees."
+              />
+            )}
+          </form.Field>
+          <form.Field
+            name="longitude"
+            validators={{ onChange: addressFormSchema.shape.longitude }}
+          >
+            {(field) => (
+              <TextField
+                id={`${field.name}-${formId}`}
+                name={field.name}
+                label="Longitude"
+                placeholder="106.6602"
+                value={field.state.value ?? ''}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+                error={getFieldError(field.state.meta)}
+                description="Optional. Decimal degrees."
+              />
+            )}
+          </form.Field>
+        </div>
+      ) : null}
 
       <form.Field name="isPrimary">
         {(field) => (
           <Label
-            htmlFor={`${field.name}-${initialValues.name || 'new'}`}
+            htmlFor={`${field.name}-${formId}`}
             className="flex items-center gap-2 text-sm font-normal text-muted-foreground"
           >
             <input
-              id={`${field.name}-${initialValues.name || 'new'}`}
+              id={`${field.name}-${formId}`}
               name={field.name}
               type="checkbox"
               className="size-4 rounded border-input accent-primary"

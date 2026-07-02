@@ -13,21 +13,30 @@ export const categorySchema = z.object({
 export type Category = z.infer<typeof categorySchema>
 
 export const categoryListResponseSchema = z
-  .union([
-    z.array(categorySchema),
-    z
-      .object({ items: z.array(categorySchema) })
-      .transform((value) => value.items),
-  ])
-  .catch(() => [])
+  .object({
+    items: z.array(categorySchema),
+    currentPage: z.number().int().nonnegative().catch(1),
+    limit: z.number().int().positive().catch(0),
+    total: z.number().int().nonnegative().catch(0),
+    totalPage: z.number().int().nonnegative().catch(0),
+  })
+  .catch(() => ({
+    items: [],
+    currentPage: 1,
+    limit: 0,
+    total: 0,
+    totalPage: 0,
+  }))
 export type CategoryListResponse = z.infer<typeof categoryListResponseSchema>
 
 export type CategoryTreeNode = Category & {
+  depth?: number
   children: ReadonlyArray<CategoryTreeNode>
 }
 
 export const categoryTreeNodeSchema: z.ZodType<CategoryTreeNode> = z.lazy(() =>
   categorySchema.extend({
+    depth: z.number().int().nonnegative().optional(),
     children: z.array(categoryTreeNodeSchema).default([]),
   }),
 )

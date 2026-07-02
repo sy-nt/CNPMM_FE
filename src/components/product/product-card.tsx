@@ -12,7 +12,7 @@ type ProductCardProps = {
 
 export function ProductCard({ product }: ProductCardProps) {
   const imageUrl = resolveImageUrl(product.mainImageKey)
-  const formattedPrice = formatPrice(product.price)
+  const formattedPrice = formatPrice(product.price) as string
 
   return (
     <Link
@@ -35,10 +35,13 @@ export function ProductCard({ product }: ProductCardProps) {
         <p className="line-clamp-2 text-sm font-medium leading-snug">
           {product.name}
         </p>
-        {formattedPrice ? (
+        <div className="flex items-center gap-1 w-full justify-between">
           <p className="text-sm font-semibold text-primary">{formattedPrice}</p>
-        ) : null}
+          <p className="text-sm text-muted-foreground">
+            {product.soldCount} sold
+          </p>
+        </div>
       </div>
-    </Link>
+    </Link >
   )
 }

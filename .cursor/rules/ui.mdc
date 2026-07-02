@@ -141,7 +141,12 @@ Consequences:
 
 ## HTML from external sources
 
-If feature code ever needs to render HTML strings from a server, sanitise first (e.g., via `dompurify`) before `dangerouslySetInnerHTML`. **Do not introduce `dompurify` as a dependency until that case actually exists.**
+`isomorphic-dompurify` is installed. Always sanitise untrusted HTML before rendering:
+
+- `sanitizeHtml()` from `#/lib/sanitize.ts` — low-level helper
+- `<RichText html={…} />` from `#/components/rich-text.tsx` — preferred; wraps sanitisation + `prose` typography
+
+Never call `dangerouslySetInnerHTML` ad-hoc in feature code — use `<RichText />` so sanitisation can't be skipped.
 
 ## Responsiveness
 

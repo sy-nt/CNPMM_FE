@@ -3,6 +3,8 @@ import type { CartItem } from '#/lib/schemas/cart.schema'
 export type CartLineView = {
   key: string
   skuId: string
+  shopId: string | null
+  shopName: string | null
   quantity: number
   unitPrice: string | null
   lineTotal: number | null
@@ -36,9 +38,14 @@ export function buildCartLineView(item: CartItem): CartLineView {
 
   const variantSummary = _summariseSelections(sku?.selections ?? [])
 
+  const shopId = item.shopId ?? sku?.shop?.id ?? product?.shopId ?? null
+  const shopName = _pickName(item.shopName, sku?.shop?.name)
+
   return {
     key: item.id ?? item.skuId,
     skuId: item.skuId,
+    shopId,
+    shopName,
     quantity: item.quantity,
     unitPrice,
     lineTotal,
@@ -46,11 +53,11 @@ export function buildCartLineView(item: CartItem): CartLineView {
     variantSummary,
     imageKey: sku?.imageKey ?? product?.mainImageKey ?? null,
     productSlug: product?.slug ?? null,
-    availableStock:
-      typeof sku?.quantity === 'number' && Number.isFinite(sku.quantity)
-        ? sku.quantity
-        : null,
-    isInactive: sku?.isActive === false || product?.isActive === false,
+    availableStock: _resolveAvailableStock(sku),
+    isInactive:
+      item.isAvailable === false ||
+      sku?.isActive === false ||
+      product?.isActive === false,
   }
 }
 
@@ -70,6 +77,25 @@ function _pickName(...candidates: ReadonlyArray<string | null | undefined>) {
 function _parseNumber(value: string): number | null {
   const numeric = Number(value)
   return Number.isFinite(numeric) ? numeric : null
+}
+
+function _resolveAvailableStock(
+  sku: CartItem['sku'] | null,
+): number | null {
+  if (!sku) return null
+
+  if (
+    typeof sku.availableQuantity === 'number' &&
+    Number.isFinite(sku.availableQuantity)
+  ) {
+    return sku.availableQuantity
+  }
+
+  if (typeof sku.quantity === 'number' && Number.isFinite(sku.quantity)) {
+    return sku.quantity
+  }
+
+  return null
 }
 
 function _summariseSelections(

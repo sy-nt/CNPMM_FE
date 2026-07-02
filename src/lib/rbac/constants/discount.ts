@@ -1,6 +1,7 @@
 import { buildModulePermissionsMap } from '#/lib/rbac/utils'
 
 export const RBAC_DISCOUNT_ACTIONS = {
+  CLAIM: 'claim',
   CREATE: 'create',
   DELETE: 'delete',
   READ: 'read',

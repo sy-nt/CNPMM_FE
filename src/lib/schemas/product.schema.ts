@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { categorySchema } from '#/lib/schemas/category.schema'
+import { shopPublicProfileSchema } from '#/lib/schemas/shop.schema'
 
 export const productSummarySchema = z.object({
   id: z.string(),
@@ -10,6 +11,7 @@ export const productSummarySchema = z.object({
   mainImageKey: z.string().nullable().optional(),
   categoryId: z.string(),
   shopId: z.string(),
+  soldCount: z.number().int().nonnegative().catch(0),
 })
 export type ProductSummary = z.infer<typeof productSummarySchema>
 
@@ -76,6 +78,7 @@ export const productDetailSchema = z.object({
   categoryId: z.string(),
   category: categorySchema.nullable().optional(),
   shopId: z.string(),
+  shop: shopPublicProfileSchema.nullable().optional(),
   isActive: z.boolean().catch(true),
   version: z.number().int().catch(1),
   attributes: z.array(productAttributeSchema).default([]),

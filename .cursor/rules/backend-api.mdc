@@ -1,0 +1,55 @@
+---
+description: Backend API contract and frontend integration scope. Read when adding or changing API clients.
+alwaysApply: true
+---
+
+# Backend API
+
+## Source of truth
+
+`docs/postman/cnpm-be.postman_collection.json` — final CNPM backend API contract.
+
+- Base path: `/api/v1` (configured via `VITE_API_BASE_URL`)
+- Auth: Bearer access token by default; refresh token only on `POST /auth/logout` and `POST /auth/refresh-token`
+- JWT-scoped identity: request bodies never carry `userId`, `shopId`, or `ownerId` — derived from the access token
+- Pagination defaults: `page=1`, `limit=30`, `sort=desc`; `limit` range `5..50`
+- Idempotency: `Idempotency-Key` header on `POST /cart/items`, `POST /order/checkout` (required), `POST /order/:id/cancel`
+
+## Frontend scope
+
+Consumer-facing routes use **public / current-user** APIs only. The **`/manage`** manager area additionally integrates **`/shop/*`** and **`/admin/*`** for RBAC-gated resource management.
+
+| Namespace | Path prefix | In scope |
+|---|---|---|
+| Public | `/` (auth, user, addresses, cart, categories, products, orders, …) | Yes |
+| Shop | `/shop/` | **Yes — `/manage/shop/*` only** |
+| Admin | `/admin/` | **Yes — `/manage/*` platform tools only** |
+
+Do not call `/shop/*` or `/admin/*` from consumer routes (`/`, `/me`, `/cart`, etc.) — only from manager pages, loaders, and API clients wired to `/manage`.
+
+## User API (`/user/`)
+
+Current-user routes from the Postman **User** folder — fully implemented in `src/lib/api/user.ts`:
+
+| Method | Path | Function | Notes |
+|---|---|---|---|
+| `GET` | `/user/` | `getCurrentUser` | Returns `User` (`id`, `email`, `firstName`, `lastName`, `imageKey`) |
+| `PATCH` | `/user/` | `updateCurrentUser` | Body: `firstName?`, `lastName?`, `imageKey?` (S3 key, not URL) |
+| `DELETE` | `/user/` | `deleteCurrentUser` | Deletes the authenticated account |
+| `POST` | `/user/block` | `blockUser` | Body: `{ email }` |
+
+**Out of scope:** `GET /admin/users/` (admin user listing) — do not implement.
+
+### Image keys
+
+User avatars use S3 **object keys** (`imageKey`, e.g. `user-avatar/sample.png`), not full URLs. Resolve for display via `resolveImageUrl()` from `#/lib/images`. Upload flow: `POST /image/presigned-url` with `prefix: "user-avatar"` → response `{ uploadUrl, fileKey }` → `PUT` to `uploadUrl` with `Content-Type: image/<extension>` (must match the extension sent in the presign request).
+
+### Query layer
+
+- Keys: `userKeys` in `src/lib/query/keys.ts`
+- Options: `currentUserQueryOptions()` in `src/lib/query/user.ts`
+- Mutations: `userMutations()` — `updateCurrent`, `deleteCurrent`, `block`
+
+### Schemas
+
+`src/lib/schemas/user.schema.ts` — `userSchema`, `updateCurrentUserInputSchema`, `blockUserInputSchema`, `updateProfileFormSchema`

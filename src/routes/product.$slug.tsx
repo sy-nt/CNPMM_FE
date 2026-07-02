@@ -1,10 +1,14 @@
 import { createFileRoute, notFound, redirect } from '@tanstack/react-router'
+import type { QueryClient } from '@tanstack/react-query'
 
 import { CategoryShell } from '#/components/layout/category-shell'
 import { LoadingFallback } from '#/components/loading-fallback'
 import { ApiError } from '#/lib/api/client'
-import { getProduct, listProducts } from '#/lib/api/product'
 import { SIMILAR_PRODUCTS_LIMIT } from '#/lib/api/product.constants'
+import {
+  productDetailQueryOptions,
+  productListQueryOptions,
+} from '#/lib/query/product'
 import type {
   ProductDetail,
   ProductSummary,
@@ -27,20 +31,26 @@ export const Route = createFileRoute('/product/$slug')({
   ),
   loader: async ({
     params,
-    abortController,
+    context,
   }): Promise<ProductDetailLoaderResult> => {
+    const { queryClient } = context
     const accessToken = authStore.state.accessToken
-    const signal = abortController.signal
 
     let product: ProductDetail
     try {
-      product = await getProduct(accessToken, params.slug, signal)
+      product = await queryClient.ensureQueryData(
+        productDetailQueryOptions(accessToken, params.slug),
+      )
     } catch (error) {
       _handleProductFetchError(error)
       throw error
     }
 
-    const similar = await _fetchSimilarProducts(accessToken, product, signal)
+    const similar = await _fetchSimilarProducts(
+      queryClient,
+      accessToken,
+      product,
+    )
 
     return { product, similar }
   },
@@ -56,29 +66,21 @@ function _handleProductFetchError(error: unknown): void {
   }
 }
 
-/**
- * Best-effort sibling lookup for the "More from this category" rail. Failures
- * here MUST NOT bubble — the detail page is still useful without related
- * products. We over-fetch by one so we can drop the current product without
- * leaving a hole in the grid.
- */
 async function _fetchSimilarProducts(
+  queryClient: QueryClient,
   accessToken: Maybe<string>,
   product: ProductDetail,
-  signal: AbortSignal,
 ): Promise<ReadonlyArray<ProductSummary>> {
   try {
-    const response = await listProducts(
-      accessToken,
-      {
+    const response = await queryClient.fetchQuery(
+      productListQueryOptions(accessToken, {
         page: 1,
         limit: SIMILAR_PRODUCTS_LIMIT + 1,
         sort: 'desc',
         orderBy: 'createdAt',
         categoryId: product.categoryId,
         isActive: true,
-      },
-      signal,
+      }),
     )
     return response.items
       .filter((item) => item.id !== product.id)

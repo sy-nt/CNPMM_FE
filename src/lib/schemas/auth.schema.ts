@@ -11,8 +11,15 @@ export const signUpSchema = z.object({
   password: _passwordSchema,
   firstName: z.string().trim().min(1, 'Required').max(64, 'At most 64 characters'),
   lastName: z.string().trim().min(1, 'Required').max(64, 'At most 64 characters'),
-  imageUrl: z
-    .union([z.url('Must be a valid URL'), z.literal('')])
+  imageKey: z
+    .union([
+      z
+        .string()
+        .trim()
+        .min(1, 'Required')
+        .max(256, 'At most 256 characters'),
+      z.literal(''),
+    ])
     .optional(),
 })
 export type SignUpInput = z.infer<typeof signUpSchema>

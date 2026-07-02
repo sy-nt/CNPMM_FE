@@ -6,17 +6,14 @@ import {
   authStore,
   clearAuthTokens,
   selectAccessToken,
-  selectRole,
   setMyRole,
 } from '#/stores/auth.store'
 
 export function AuthBootstrap(): null {
   const accessToken = useStore(authStore, selectAccessToken)
-  const role = useStore(authStore, selectRole)
 
   useEffect(() => {
     if (!accessToken) return
-    if (role) return
 
     const controller = new AbortController()
     getMyRole(accessToken, controller.signal)
@@ -32,7 +29,7 @@ export function AuthBootstrap(): null {
       })
 
     return () => controller.abort()
-  }, [accessToken, role])
+  }, [accessToken])
 
   return null
 }

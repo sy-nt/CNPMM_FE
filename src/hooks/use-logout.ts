@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { logout as logoutRequest } from '#/lib/api/auth'
-import { clearCache } from '#/lib/api/cache'
 import { invalidateMyRole } from '#/lib/api/role'
 import { authStore, clearAuthTokens } from '#/stores/auth.store'
 
@@ -14,6 +14,7 @@ type UseLogoutResult = {
 
 export function useLogout(): UseLogoutResult {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [isPending, setIsPending] = useState(false)
 
   const logout = useCallback(async (): Promise<void> => {
@@ -29,13 +30,13 @@ export function useLogout(): UseLogoutResult {
       }
     } finally {
       invalidateMyRole()
-      clearCache()
+      queryClient.clear()
       clearAuthTokens()
       setIsPending(false)
       toast.success('Signed out.')
       void navigate({ to: '/sign-in', replace: true })
     }
-  }, [isPending, navigate])
+  }, [isPending, navigate, queryClient])
 
   return { logout, isPending }
 }

@@ -1,0 +1,85 @@
+---
+description: Add a new backend resource end-to-end (schema → API → query keys → query options → permissions). Use when wiring the frontend to a new REST resource.
+alwaysApply: false
+---
+
+# Add a New API Resource Skill
+
+Use when the backend adds a new resource (e.g. `/warehouses`, `/discounts`).
+
+## 1. Zod schema — `src/lib/schemas/<resource>.schema.ts`
+
+- Mirror backend field names exactly — no casing transforms at the boundary
+- Export response/list/create/update schemas and infer types via `z.infer<typeof schema>`
+- Use `as const` maps instead of `enum`
+
+## 2. API client — `src/lib/api/<resource>.ts`
+
+- Import `apiRequest` from `#/lib/api/client`
+- One function per HTTP verb: `listX`, `getX`, `createX`, `updateX`, `deleteX`
+- Parse responses: `return xSchema.parse(await apiRequest<unknown>(…))`
+- Accept `accessToken: Maybe<string>` and optional `signal?: AbortSignal`
+- Co-locate query-param types (`XListQuery`) and defaults in `<resource>.constants.ts`
+
+## 3. Permissions — `src/lib/rbac/constants/<domain>.ts`
+
+```ts
+export const WIDGET_PERMISSIONS = {
+  widget_create: 'widget:create',
+  widget_read: 'widget:read',
+} as const
+```
+
+- Import and merge in `src/lib/rbac/constants/index.ts`
+- Never use raw strings in feature code
+
+## 4. Query keys — `src/lib/query/keys.ts`
+
+```ts
+export const widgetKeys = {
+  all: ['widgets'] as const,
+  lists: () => [...widgetKeys.all, 'list'] as const,
+  list: (accessToken: string | null, query: WidgetListQuery) =>
+    [...widgetKeys.lists(), accessToken, stableJsonKey(query)] as const,
+  details: () => [...widgetKeys.all, 'detail'] as const,
+  detail: (accessToken: string | null, id: string) =>
+    [...widgetKeys.details(), accessToken, id] as const,
+}
+```
+
+## 5. Query options — `src/lib/query/<resource>.ts`
+
+```ts
+export function widgetListQueryOptions(accessToken: Maybe<string>, query: WidgetListQuery) {
+  return queryOptions({
+    queryKey: widgetKeys.list(accessToken ?? null, query),
+    queryFn: ({ signal }) => listWidgets(accessToken, query, signal),
+    staleTime: QUERY_STALE_TIME_MS,
+  })
+}
+
+export function invalidateWidgetQueries(queryClient: QueryClient): Promise<void> {
+  return queryClient.invalidateQueries({ queryKey: widgetKeys.all })
+}
+```
+
+## 6. Route (if user-facing)
+
+- Add `src/routes/<path>.tsx` with loader using `context.queryClient.fetchQuery(widgetListQueryOptions(…))`
+- Page component in `src/pages/<feature>/`
+- See `.cursor/skills/add-route.mdc`
+
+## 7. UI gating (if applicable)
+
+- Wrap create/edit/delete actions in `<RequirePermission all={[WIDGET_PERMISSIONS.widget_create]}>`
+- Permission-gated routes: `beforeLoad: ensurePermission({ all: […] })`
+
+## Acceptance checklist
+
+- [ ] `yarn tsc --noEmit` clean
+- [ ] `yarn lint` clean
+- [ ] API responses validated through Zod
+- [ ] Query keys in `keys.ts` — none inline
+- [ ] No raw permission strings
+- [ ] `signal` passed through to `apiRequest`
+- [ ] No `fetch` in components

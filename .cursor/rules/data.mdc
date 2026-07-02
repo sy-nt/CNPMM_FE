@@ -1,0 +1,172 @@
+---
+description: HTTP client, TanStack Query cache, URL state, and mutation invalidation patterns.
+globs:
+  - "src/**/*.{ts,tsx}"
+alwaysApply: true
+---
+
+# State & Data
+
+Three state layers — each with a clear role. **Do not mix them.**
+
+| Layer | Tool | Scope |
+|---|---|---|
+| Global client state | `@tanstack/store` | Auth tokens, role/permissions, theme |
+| Server cache | `@tanstack/react-query` | Every backend resource with caching needs |
+| URL state | TanStack Router search params | Pagination, filters, search — refresh-survivable |
+| Component-local | `useState` / `useReducer` | Modal flags, form drafts, selected rows |
+
+## HTTP client (`src/lib/api/client.ts`)
+
+- `apiRequest<T>(path, options)` — the only HTTP entry point for feature code
+- Options: `method`, `body`, `headers`, `signal`, `accessToken`, `query`, `skipAuthRefresh`
+- Throws `ApiError` (`.status`, `.code?`) on failure
+- Auto-refreshes on 401 via single-flight `POST /auth/refresh-token`; clears tokens on refresh failure
+- `VITE_API_BASE_URL` must be set — read via `import.meta.env`, never `process.env`
+
+### Resource file pattern (`src/lib/api/<resource>.ts`)
+
+```ts
+export async function listProducts(
+  accessToken: Maybe<string>,
+  query: ProductListQuery,
+  signal?: AbortSignal,
+): Promise<ProductListResponse> {
+  const raw = await apiRequest<unknown>('/products', {
+    accessToken,
+    query: _toQueryParams(query),
+    signal,
+  })
+  return productListResponseSchema.parse(raw)
+}
+```
+
+Rules:
+
+- One file per resource; co-locate request/response types and query-param types in the same file
+- Parse every response through a Zod schema from `src/lib/schemas/`
+- Pass `signal` from loader (`abortController.signal`) or `useQuery` (`queryFn` context)
+- Default query shapes live in `<resource>.constants.ts` (e.g. `PRODUCT_LIST_DEFAULT_QUERY`)
+
+## Query keys (`src/lib/query/keys.ts`)
+
+Hierarchical, `as const` factories:
+
+```ts
+export const productKeys = {
+  all: ['products'] as const,
+  lists: () => [...productKeys.all, 'list'] as const,
+  list: (accessToken: string | null, query: ProductListQuery) =>
+    [...productKeys.lists(), accessToken, stableJsonKey(query)] as const,
+  details: () => [...productKeys.all, 'detail'] as const,
+  detail: (accessToken: string | null, idOrSlug: string) =>
+    [...productKeys.details(), accessToken, idOrSlug] as const,
+}
+```
+
+- Include `accessToken` (or `null`) when responses vary by auth
+- Use `stableJsonKey()` from `#/lib/utils` for object query params — keys must be stable across equivalent objects
+- Never inline query key arrays in components or loaders
+
+## Query options (`src/lib/query/<resource>.ts`)
+
+```ts
+export function productListQueryOptions(accessToken: Maybe<string>, query: ProductListQuery) {
+  return queryOptions({
+    queryKey: productKeys.list(accessToken ?? null, query),
+    queryFn: ({ signal }) => listProducts(accessToken, query, signal),
+    staleTime: QUERY_STALE_TIME_MS,
+  })
+}
+
+export function invalidateProductQueries(queryClient: QueryClient): Promise<void> {
+  return queryClient.invalidateQueries({ queryKey: productKeys.all })
+}
+```
+
+- Export `*QueryOptions()` factories — consumers spread into `useQuery` or pass to `queryClient.fetchQuery` / `ensureQueryData`
+- Export `invalidate*Queries()` helpers for mutations
+- Global defaults: `QUERY_STALE_TIME_MS` (30s), `QUERY_GC_TIME_MS` (5min) in `src/lib/query/constants.ts`; router-level defaults set in `src/router.tsx`
+
+## Consumption patterns
+
+### In a route loader (preferred for page data)
+
+```ts
+loader: async ({ context, abortController, deps }) => {
+  const accessToken = authStore.state.accessToken
+  const result = await context.queryClient.fetchQuery(
+    productListQueryOptions(accessToken, { ...DEFAULT, page: deps.page }),
+  )
+  return { products: result.items, totalPage: result.totalPage }
+}
+```
+
+Use `loaderDeps` when the loader must re-run on search-param changes. Handle expected `ApiError` in the loader (return an error field) vs re-throw for unexpected failures.
+
+### In a component hook
+
+```ts
+const { data } = useQuery({
+  ...cartQueryOptions(accessToken),
+  enabled: isAuthenticated && Boolean(accessToken),
+})
+```
+
+Gate with `enabled` when prerequisites are missing. Derive display values via pure helpers (`countCartItems`, `formatCartBadgeCount`).
+
+### Mutations
+
+Use `createMutationOptions()` from `src/lib/query/mutation.ts` and resource-specific `*Mutations()` factories in `src/lib/query/<resource>.ts`.
+
+```ts
+// lib/query/cart.ts
+export function cartMutations(accessToken: string, queryClient: QueryClient) {
+  return {
+    addItem: createMutationOptions({
+      mutationKey: cartKeys.mutation('add', accessToken),
+      mutationFn: (input) => addCartItem(accessToken, input, …),
+      afterSuccess: () => invalidateCartQueries(queryClient),
+    }),
+    // …
+  } as const
+}
+
+// in a component
+const queryClient = useQueryClient()
+const addToCart = useMutation(cartMutations(accessToken, queryClient).addItem)
+await addToCart.mutateAsync({ skuId, quantity })
+```
+
+Rules:
+
+- Mutation keys live in `src/lib/query/keys.ts` under `*.mutation(action, accessToken)`
+- `mutationFn` wraps the `src/lib/api/<resource>.ts` write function — never call `apiRequest` from components
+- `afterSuccess` invalidates query cache (`invalidate*Queries`) and/or API-layer cache (`invalidateCurrentUser`, `invalidatePersonalAddresses`)
+- Loader-owned data also needs `router.invalidate()` after mutation (e.g. `/me` profile/addresses)
+- Use `mutation.isPending` / `mutation.variables` for per-item loading UI — avoid manual `useState` for pending flags
+- Auth flows (sign-in, sign-up) stay as direct API calls — they redirect, not cache-invalidate
+
+Available mutation factories: `cartMutations`, `userMutations`, `personalAddressMutations`, `shopAddressMutations`, `productMutations`, `categoryMutations`.
+
+## URL state
+
+Pagination, filters, and search belong in validated search params — not component state.
+
+```ts
+const searchSchema = z.object({
+  page: z.coerce.number().int().min(1).optional().catch(undefined),
+  search: z.string().trim().min(1).optional().catch(undefined),
+})
+```
+
+Update via `navigate({ search: (prev) => ({ ...prev, page: 2 }) })`. Debounce text search before writing to URL (`useDebouncedValue` in `src/hooks/use-debounced-value.ts`).
+
+## Anti-patterns
+
+- `fetch` / `axios` in components — use `lib/api/` + query layer
+- Inline query keys — add to `lib/query/keys.ts`
+- Copying query data into `@tanstack/store`
+- Skipping Zod parse on API responses
+- Overriding `staleTime` / `gcTime` per-hook without reason — use shared constants
+- `useEffect` for data fetching when a loader or `useQuery` is the right seam

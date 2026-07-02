@@ -4,6 +4,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import {
   HelpCircle,
   Home,
+  LayoutDashboard,
   LogOut,
   Search,
   ShoppingCart,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 
 import { ThemeToggle } from '#/components/theme-toggle'
+import { NotificationBell } from '#/components/notification/notification-bell'
 import { Button } from '#/components/ui/button'
 import {
   DropdownMenu,
@@ -21,9 +23,12 @@ import {
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
 import { Input } from '#/components/ui/input'
+import { useCartItemCount } from '#/hooks/use-cart-item-count'
 import { useClientStore } from '#/hooks/use-client-store'
 import { useDebouncedValue } from '#/hooks/use-debounced-value'
 import { useLogout } from '#/hooks/use-logout'
+import { formatCartBadgeCount } from '#/lib/query/cart'
+import { useIsManagerRole } from '#/lib/rbac/hooks'
 import { cn } from '#/lib/utils'
 import { authStore, selectIsAuthenticated } from '#/stores/auth.store'
 
@@ -44,7 +49,9 @@ export function SiteHeader({
     selectIsAuthenticated,
     false,
   )
+  const isManager = useIsManagerRole()
   const { logout, isPending: isLoggingOut } = useLogout()
+  const cartItemCount = useCartItemCount()
   const [searchTerm, setSearchTerm] = useState('')
   const debouncedSearchTerm = useDebouncedValue(searchTerm, SEARCH_DEBOUNCE_MS)
 
@@ -127,44 +134,55 @@ export function SiteHeader({
           </Button>
 
           {isAuthenticated ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Account menu"
-                  type="button"
-                >
-                  <User aria-hidden="true" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem asChild>
-                  <Link to="/me">
-                    <UserCircle aria-hidden="true" />
-                    My account
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/help">
-                    <HelpCircle aria-hidden="true" />
-                    Help
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  disabled={isLoggingOut}
-                  onSelect={(event) => {
-                    event.preventDefault()
-                    void logout()
-                  }}
-                >
-                  <LogOut aria-hidden="true" />
-                  {isLoggingOut ? 'Signing out…' : 'Logout'}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <>
+              <NotificationBell />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Account menu"
+                    type="button"
+                  >
+                    <User aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem asChild>
+                    <Link to="/me">
+                      <UserCircle aria-hidden="true" />
+                      My account
+                    </Link>
+                  </DropdownMenuItem>
+                  {isManager ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/manage">
+                        <LayoutDashboard aria-hidden="true" />
+                        Manager
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
+                  <DropdownMenuItem asChild>
+                    <Link to="/help">
+                      <HelpCircle aria-hidden="true" />
+                      Help
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    disabled={isLoggingOut}
+                    onSelect={(event) => {
+                      event.preventDefault()
+                      void logout()
+                    }}
+                  >
+                    <LogOut aria-hidden="true" />
+                    {isLoggingOut ? 'Signing out…' : 'Logout'}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           ) : (
             <Button asChild variant="ghost" size="icon" aria-label="Sign in">
               <Link to="/sign-in">
@@ -173,9 +191,26 @@ export function SiteHeader({
             </Button>
           )}
 
-          <Button asChild variant="ghost" size="icon" aria-label="Open cart">
-            <Link to="/cart">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            aria-label={
+              cartItemCount > 0
+                ? `Open cart (${cartItemCount} items)`
+                : 'Open cart'
+            }
+          >
+            <Link to="/cart" className="relative">
               <ShoppingCart aria-hidden="true" />
+              {cartItemCount > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground"
+                >
+                  {formatCartBadgeCount(cartItemCount)}
+                </span>
+              ) : null}
             </Link>
           </Button>
 

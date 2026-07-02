@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useStore } from '@tanstack/react-store'
 import { Loader2, ShoppingCart } from 'lucide-react'
 import { toast } from 'sonner'
@@ -8,8 +9,8 @@ import { Breadcrumb } from '#/components/breadcrumb'
 import { CategoryShell } from '#/components/layout/category-shell'
 import { RichText } from '#/components/rich-text'
 import { Button } from '#/components/ui/button'
-import { addCartItem, invalidateCart } from '#/lib/api/cart'
 import { ApiError } from '#/lib/api/client'
+import { cartMutations } from '#/lib/query/cart'
 import { formatPrice } from '#/lib/format'
 import { buildProductBreadcrumbs } from '#/pages/product/_breadcrumbs'
 import {
@@ -22,6 +23,7 @@ import { ProductAttributes } from '#/pages/product/product-attributes'
 import { ProductGallery } from '#/pages/product/product-gallery'
 import type { GallerySelection } from '#/pages/product/product-gallery'
 import { ProductQuantitySection } from '#/pages/product/product-quantity-section'
+import { ProductShopSection } from '#/pages/product/product-shop-section'
 import { ProductSummary } from '#/pages/product/product-summary'
 import { QUANTITY_MIN } from '#/pages/product/quantity-stepper'
 import { SimilarProducts } from '#/pages/product/similar-products'
@@ -44,6 +46,7 @@ const QUANTITY_FALLBACK_MAX = 99
 export function ProductDetailPage() {
   const { product, similar } = _routeApi.useLoaderData()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const accessToken = useStore(authStore, selectAccessToken)
   const isAuthenticated = useStore(authStore, selectIsAuthenticated)
   const category = product.category ?? null
@@ -58,7 +61,10 @@ export function ProductDetailPage() {
    */
   const [overrideImageKey, setOverrideImageKey] = useState<string | null>(null)
   const [quantity, setQuantity] = useState<number>(QUANTITY_MIN)
-  const [isAddingToCart, setIsAddingToCart] = useState(false)
+
+  const addToCart = useMutation(
+    cartMutations(accessToken ?? '', queryClient).addItem,
+  )
 
   const matchedSku = useMemo(
     () => matchSkuFromSelection(product.skus, selection),
@@ -115,7 +121,7 @@ export function ProductDetailPage() {
   }
 
   const handleAddToCart = async (): Promise<void> => {
-    if (isAddingToCart) return
+    if (addToCart.isPending) return
     if (skuRequired && !matchedSku) {
       toast.error('Please choose every option before adding to cart.')
       return
@@ -139,22 +145,18 @@ export function ProductDetailPage() {
       return
     }
 
-    setIsAddingToCart(true)
     try {
-      await addCartItem(
-        accessToken,
-        { skuId: matchedSku.id, quantity },
-        { idempotencyKey: _newIdempotencyKey() },
-      )
-      invalidateCart()
+      await addToCart.mutateAsync({
+        skuId: matchedSku.id,
+        quantity,
+        idempotencyKey: _newIdempotencyKey(),
+      })
       toast.success(`Added ${quantity} × ${product.name} to your cart.`)
     } catch (error) {
       const fallback = 'Could not add this item to your cart.'
       const message =
         error instanceof ApiError ? error.message || fallback : fallback
       toast.error(message)
-    } finally {
-      setIsAddingToCart(false)
     }
   }
 
@@ -207,18 +209,20 @@ export function ProductDetailPage() {
                 type="button"
                 size="lg"
                 onClick={() => void handleAddToCart()}
-                disabled={!canAddToCart || isAddingToCart}
+                disabled={!canAddToCart || addToCart.isPending}
               >
-                {isAddingToCart ? (
+                {addToCart.isPending ? (
                   <Loader2 aria-hidden="true" className="size-4 animate-spin" />
                 ) : (
                   <ShoppingCart aria-hidden="true" />
                 )}
-                {isAddingToCart ? 'Adding…' : 'Add to cart'}
+                {addToCart.isPending ? 'Adding…' : 'Add to cart'}
               </Button>
             </div>
           </div>
         </div>
+
+        {product.shop ? <ProductShopSection shop={product.shop} /> : null}
 
         <SimilarProducts
           products={similar}

@@ -1,24 +1,33 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
 
 import { CategoryShell } from '#/components/layout/category-shell'
 import { LoadingFallback } from '#/components/loading-fallback'
-import {
-  getCachedCategories,
-  listCategories,
-} from '#/lib/api/category'
-import { CATEGORY_LIST_DEFAULT_QUERY } from '#/lib/api/category.constants'
+import { getPostAuthRedirect, POST_AUTH_DEFAULT_ROUTE } from '#/lib/auth-redirect'
 import { ApiError } from '#/lib/api/client'
-import { getRandomProductSample, listProducts } from '#/lib/api/product'
+import {
+  collectClaimedDiscountIds,
+  MY_DISCOUNT_CLAIMS_DEFAULT_QUERY,
+  PLATFORM_DISCOUNT_HOME_QUERY,
+} from '#/lib/api/discount.constants'
+import { getRandomProductSample } from '#/lib/api/product'
 import {
   PRODUCT_LIST_DEFAULT_QUERY,
   PRODUCT_SLIDER_DISPLAY_COUNT,
   PRODUCT_SLIDER_POOL_SIZE,
   PRODUCT_SLIDER_QUERY,
 } from '#/lib/api/product.constants'
+import {
+  categoryBySlugQueryOptions,
+} from '#/lib/query/category'
+import {
+  myDiscountClaimsQueryOptions,
+  platformDiscountListQueryOptions,
+} from '#/lib/query/discount'
+import { productListQueryOptions } from '#/lib/query/product'
 import type { Category } from '#/lib/schemas/category.schema'
+import type { PlatformDiscount } from '#/lib/schemas/discount.schema'
 import type { ProductSummary } from '#/lib/schemas/product.schema'
-import { findBySlug } from '#/lib/slug'
 import { HomePage } from '#/pages/home/home-page'
 import { authStore } from '#/stores/auth.store'
 
@@ -31,6 +40,8 @@ const homeSearchSchema = z.object({
 export type HomeLoaderResult = {
   products: ReadonlyArray<ProductSummary>
   slider: ReadonlyArray<ProductSummary>
+  platformDiscounts: ReadonlyArray<PlatformDiscount>
+  claimedDiscountIds: ReadonlySet<string>
   search: string | undefined
   activeCategory: Category | null
   page: number
@@ -39,6 +50,12 @@ export type HomeLoaderResult = {
 }
 
 export const Route = createFileRoute('/')({
+  beforeLoad: () => {
+    const destination = getPostAuthRedirect(authStore.state.role?.name)
+    if (destination !== POST_AUTH_DEFAULT_ROUTE) {
+      throw redirect({ to: destination })
+    }
+  },
   component: HomePage,
   validateSearch: homeSearchSchema,
   loaderDeps: ({ search }) => ({
@@ -51,7 +68,12 @@ export const Route = createFileRoute('/')({
       <LoadingFallback variant="inline" label="Loading products…" />
     </CategoryShell>
   ),
-  loader: async ({ deps, abortController }): Promise<HomeLoaderResult> => {
+  loader: async ({
+    deps,
+    abortController,
+    context,
+  }): Promise<HomeLoaderResult> => {
+    const { queryClient } = context
     const accessToken = authStore.state.accessToken
     const signal = abortController.signal
     const isSearching = Boolean(deps.search)
@@ -59,42 +81,61 @@ export const Route = createFileRoute('/')({
 
     let activeCategory: Category | null = null
     if (deps.category) {
-      const list = await listCategories(
-        accessToken,
-        CATEGORY_LIST_DEFAULT_QUERY,
-        signal,
+      activeCategory = await queryClient.fetchQuery(
+        categoryBySlugQueryOptions(accessToken, deps.category),
       )
-      const bySlug = (c: Category) => c.slug
-      activeCategory =
-        findBySlug(getCachedCategories(), bySlug, deps.category) ??
-        findBySlug(list, bySlug, deps.category) ??
-        null
     }
 
-    const [feedResult, sliderResult] = await Promise.allSettled([
-      listProducts(
-        accessToken,
-        {
-          ...PRODUCT_LIST_DEFAULT_QUERY,
-          page: deps.page,
-          search: deps.search,
-          categoryId: activeCategory?.id,
-        },
-        signal,
-      ),
-      isSearching || isFiltered
-        ? Promise.resolve<ReadonlyArray<ProductSummary>>([])
-        : getRandomProductSample(
-            accessToken,
-            {
-              poolSize: PRODUCT_SLIDER_POOL_SIZE,
-              displayCount: PRODUCT_SLIDER_DISPLAY_COUNT,
-              query: PRODUCT_SLIDER_QUERY,
-            },
-            signal,
-          ),
-    ])
+    const feedQuery = productListQueryOptions(accessToken, {
+      ...PRODUCT_LIST_DEFAULT_QUERY,
+      page: deps.page,
+      search: deps.search,
+      categoryId: activeCategory?.id,
+      orderBy: 'soldCount',
+    })
+
+    const showPromotions = !isSearching && !isFiltered
+
+    const [feedResult, sliderResult, discountsResult, claimsResult] =
+      await Promise.allSettled([
+        queryClient.fetchQuery(feedQuery),
+        isSearching || isFiltered
+          ? Promise.resolve<ReadonlyArray<ProductSummary>>([])
+          : getRandomProductSample(
+              accessToken,
+              {
+                poolSize: PRODUCT_SLIDER_POOL_SIZE,
+                displayCount: PRODUCT_SLIDER_DISPLAY_COUNT,
+                query: PRODUCT_SLIDER_QUERY,
+              },
+              signal,
+            ),
+        showPromotions
+          ? queryClient.fetchQuery(
+              platformDiscountListQueryOptions(
+                accessToken,
+                PLATFORM_DISCOUNT_HOME_QUERY,
+              ),
+            )
+          : Promise.resolve({ items: [] }),
+        showPromotions && accessToken
+          ? queryClient.fetchQuery(
+              myDiscountClaimsQueryOptions(accessToken, {
+                ...MY_DISCOUNT_CLAIMS_DEFAULT_QUERY,
+                limit: 100,
+              }),
+            )
+          : Promise.resolve({ items: [] }),
+      ])
     const slider = sliderResult.status === 'fulfilled' ? sliderResult.value : []
+    const platformDiscounts =
+      discountsResult.status === 'fulfilled'
+        ? discountsResult.value.items
+        : []
+    const claimedDiscountIds =
+      claimsResult.status === 'fulfilled'
+        ? collectClaimedDiscountIds(claimsResult.value.items)
+        : new Set<string>()
 
     if (feedResult.status === 'rejected') {
       const reason = feedResult.reason
@@ -102,6 +143,8 @@ export const Route = createFileRoute('/')({
         return {
           products: [],
           slider,
+          platformDiscounts,
+          claimedDiscountIds,
           search: deps.search,
           activeCategory,
           page: deps.page,
@@ -115,6 +158,8 @@ export const Route = createFileRoute('/')({
     return {
       products: feedResult.value.items,
       slider,
+      platformDiscounts,
+      claimedDiscountIds,
       search: deps.search,
       activeCategory,
       page: feedResult.value.currentPage || deps.page,

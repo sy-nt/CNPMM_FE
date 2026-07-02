@@ -5,7 +5,17 @@ import {
 import { apiRequest } from '#/lib/api/client'
 import type { PaginationQuery } from '#/lib/api/common'
 import type { MyRole } from '#/lib/schemas/role.schema'
-import { myRoleSchema } from '#/lib/schemas/role.schema'
+import {
+  myRoleSchema,
+  roleDetailSchema,
+  roleListResponseSchema,
+  systemPermissionListSchema,
+} from '#/lib/schemas/role.schema'
+import type {
+  RoleDetail,
+  RoleListResponse,
+  SystemPermissionList,
+} from '#/lib/schemas/role.schema'
 
 const MY_ROLE_CACHE_PREFIX = 'role:my:'
 
@@ -24,7 +34,7 @@ export type UpdateRoleInput = {
 }
 
 export function getMyRole(
-  accessToken: string,  
+  accessToken: string,
   signal?: AbortSignal,
 ): Promise<MyRole> {
   return withCache(
@@ -45,53 +55,66 @@ export function invalidateMyRole(): void {
   invalidateCacheByPrefix(MY_ROLE_CACHE_PREFIX)
 }
 
-export function listRoles(
+export async function listRoles(
   accessToken: string,
   query: RoleListQuery = {},
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/roles/', { method: 'GET', accessToken, query, signal })
+): Promise<RoleListResponse> {
+  const raw = await apiRequest<unknown>('/admin/roles/', {
+    method: 'GET',
+    accessToken,
+    query,
+    signal,
+  })
+  return roleListResponseSchema.parse(raw)
 }
 
-export function listSystemPermissions(
+export async function listSystemPermissions(
   accessToken: string,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/roles/permissions/system', {
+): Promise<SystemPermissionList> {
+  const raw = await apiRequest<unknown>('/admin/roles/permissions/system', {
     method: 'GET',
     accessToken,
     signal,
   })
+  return systemPermissionListSchema.parse(raw)
 }
 
-export function getRole(
+export async function getRole(
   accessToken: string,
   roleId: string,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest(`/role/${roleId}`, { method: 'GET', accessToken, signal })
+): Promise<RoleDetail> {
+  const raw = await apiRequest<unknown>(`/admin/role/${roleId}`, {
+    method: 'GET',
+    accessToken,
+    signal,
+  })
+  return roleDetailSchema.parse(raw)
 }
 
-export function createRole(
+export async function createRole(
   accessToken: string,
   input: CreateRoleInput,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/role/', {
+): Promise<RoleDetail> {
+  const raw = await apiRequest<unknown>('/admin/role/', {
     method: 'POST',
     accessToken,
     body: input,
     signal,
   })
+  return roleDetailSchema.parse(raw)
 }
 
-export function updateRole(
+export async function updateRole(
   accessToken: string,
   roleId: string,
   input: UpdateRoleInput,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest(`/role/${roleId}`, {
+): Promise<void> {
+  await apiRequest(`/admin/role/${roleId}`, {
     method: 'PUT',
     accessToken,
     body: input,
@@ -99,12 +122,12 @@ export function updateRole(
   })
 }
 
-export function deleteRole(
+export async function deleteRole(
   accessToken: string,
   roleId: string,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest(`/role/${roleId}`, {
+): Promise<void> {
+  await apiRequest(`/admin/role/${roleId}`, {
     method: 'DELETE',
     accessToken,
     signal,

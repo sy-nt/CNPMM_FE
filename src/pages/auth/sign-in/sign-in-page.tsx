@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 
 import { AuthCard } from '#/components/auth/auth-card'
 import { useRedirectIfAuthenticated } from '#/hooks/use-redirect-if-authenticated'
+import { getPostAuthRedirect } from '#/lib/auth-redirect'
 import { signIn } from '#/lib/api/auth'
 import { ApiError } from '#/lib/api/client'
 import { getMyRole } from '#/lib/api/role'
@@ -22,18 +23,20 @@ export function SignInPage() {
       const tokens = await signIn(values)
       setAuthTokens(tokens)
 
+      let roleName: string | undefined
       try {
         const myRole = await getMyRole(tokens.accessToken)
         setMyRole(myRole)
+        roleName = myRole.name
       } catch (roleError) {
-        // Login itself succeeded — surface a soft warning so the user knows
-        // RBAC-gated views may be hidden until they retry.
         console.error('Failed to load role/permissions', roleError)
         toast.warning('Signed in, but could not load your permissions.')
       }
 
       toast.success('Signed in successfully.')
-      void navigate({ to: '/' })
+      void navigate({
+        to: getPostAuthRedirect(roleName),
+      })
     } catch (error) {
       const message =
         error instanceof ApiError

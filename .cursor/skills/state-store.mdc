@@ -9,7 +9,7 @@ The project uses **`@tanstack/store`** + **`@tanstack/react-store`** as its clie
 
 ## 1. Confirm it is NOT server state
 
-Server data (loaded via a route loader, server function, or — once added — a query lib) belongs in the router's loader cache or the query lib. NEVER copy it into a client store.
+Server data (loaded via a route loader, `@tanstack/react-query`, or server function) belongs in the query cache or loader — NEVER copy it into a client store.
 
 Server-state smell tests:
 

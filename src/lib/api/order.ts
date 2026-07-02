@@ -1,22 +1,24 @@
 import { apiRequest } from '#/lib/api/client'
 import { buildIdempotencyHeaders } from '#/lib/api/common'
 import type { IdempotencyKey, PaginationQuery } from '#/lib/api/common'
+import {
+  checkoutPreviewResponseSchema,
+  orderListResponseSchema,
+  placeOrderResponseSchema,
+} from '#/lib/schemas/order.schema'
+import type {
+  CheckoutPreviewInput,
+  CheckoutPreviewResponse,
+  OrderListResponse,
+  PlaceOrderInput,
+  PlaceOrderResponse,
+} from '#/lib/schemas/order.schema'
 
 export type OrderListQuery = PaginationQuery<
   'createdAt' | 'updatedAt' | 'status'
->
-
-export type CheckoutPreviewInput = {
-  destinationAddressId: string
-  deliveryMethodId: string
-  code?: string
-}
-
-export type CheckoutInput = {
-  destinationAddressId: string
-  deliveryMethodId: string
-  expectedTotalAmount: string
-  code?: string
+> & {
+  status?: string
+  shopId?: string
 }
 
 export type UpdateOrderStatusInput = {
@@ -27,32 +29,34 @@ export type CancelOrderInput = {
   reason: string
 }
 
-export function previewCheckout(
+export async function previewCheckout(
   accessToken: string,
   input: CheckoutPreviewInput,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/order/checkout/preview', {
+): Promise<CheckoutPreviewResponse> {
+  const raw = await apiRequest<unknown>('/order/checkout/preview', {
     method: 'POST',
     accessToken,
     body: input,
     signal,
   })
+  return checkoutPreviewResponseSchema.parse(raw)
 }
 
-export function placeOrder(
+export async function placeOrder(
   accessToken: string,
-  input: CheckoutInput,
+  input: PlaceOrderInput,
   idempotencyKey: IdempotencyKey,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/order/checkout', {
+): Promise<PlaceOrderResponse> {
+  const raw = await apiRequest<unknown>('/order/checkout', {
     method: 'POST',
     accessToken,
     body: input,
     headers: buildIdempotencyHeaders(idempotencyKey),
     signal,
   })
+  return placeOrderResponseSchema.parse(raw)
 }
 
 export function getOrder(
@@ -96,15 +100,16 @@ export function cancelOrder(
   })
 }
 
-export function listOrders(
+export async function listOrders(
   accessToken: string,
   query: OrderListQuery = {},
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/orders/', {
+): Promise<OrderListResponse> {
+  const raw = await apiRequest<unknown>('/orders/', {
     method: 'GET',
     accessToken,
     query,
     signal,
   })
+  return orderListResponseSchema.parse(raw)
 }

@@ -14,7 +14,7 @@ Map the URL to a file under `src/routes/`:
 | URL | File |
 |---|---|
 | `/` | `src/routes/index.tsx` |
-| `/about` | `src/routes/about.tsx` |
+| `/about` | `src/routes/about.tsx` → imports from `src/pages/about/` |
 | `/posts` | `src/routes/posts.tsx` |
 | `/posts/$postId` | `src/routes/posts.$postId.tsx` |
 | pathless layout wrapping `/dashboard/*` | `src/routes/_dashboard.tsx` (+ children: `_dashboard.index.tsx`, `_dashboard.users.tsx`, …) |
@@ -40,7 +40,7 @@ Rules:
 
 - Always **named export** `Route`. No default export on a route file.
 - The string passed to `createFileRoute('/posts')` MUST match the file path; the router plugin enforces this.
-- Component name is PascalCase and ends in `Page` (or another descriptive suffix); the file name stays kebab-case (TanStack file-based naming conventions take precedence: `posts.$postId.tsx` is correct, never `Posts.PostId.tsx`).
+- Component name is PascalCase; UI lives in `src/pages/<feature>/` — route files stay thin (loader, guards, `pendingComponent`).
 
 ## 3. Add params and search
 
@@ -72,30 +72,39 @@ const { postId } = Route.useParams()
 
 ## 4. Add a loader
 
-```tsx
-export const Route = createFileRoute('/posts/$postId')({
-  loader: async ({ params, signal }) => {
-    const data = await fetchPost(params.postId, { signal })
-    return { post: data }
-  },
-  pendingComponent: () => <div className="p-8">Loading…</div>,
-  errorComponent: ({ error }) => (
-    <div className="p-8 text-destructive">
-      {error instanceof Error ? error.message : 'Something went wrong'}
-    </div>
-  ),
-  component: PostPage,
-})
+Prefer TanStack Query in loaders when data should be cached:
 
-function PostPage() {
-  const { post } = Route.useLoaderData()
-  return <article className="p-8">{post.title}</article>
+```tsx
+import { productDetailQueryOptions } from '#/lib/query/product'
+import { authStore } from '#/stores/auth.store'
+import { LoadingFallback } from '#/components/loading-fallback'
+
+export const Route = createFileRoute('/product/$slug')({
+  loader: async ({ params, context, abortController }) => {
+    const accessToken = authStore.state.accessToken
+    const product = await context.queryClient.fetchQuery(
+      productDetailQueryOptions(accessToken, params.slug),
+    )
+    return { product }
+  },
+  pendingComponent: () => <LoadingFallback variant="page" label="Loading…" />,
+  component: ProductPage,
+})
+```
+
+Direct API calls are fine for one-off fetches that don't need caching:
+
+```tsx
+loader: async ({ abortController }) => {
+  const data = await getCurrentUser(accessToken, abortController.signal)
+  return { user: data }
 }
 ```
 
-- Always pass through the `signal` to `fetch` so navigation cancellation works.
+- Pass `abortController.signal` to API functions for cancellation.
+- Use `loaderDeps` when the loader must re-run on search-param changes.
 - The loader's return type is inferred — `useLoaderData()` is fully typed.
-- If the loader can fail in expected ways, prefer returning a `Result` shape over throwing — throwing only when unrecoverable.
+- For expected `ApiError` failures, return an error field; re-throw unexpected errors.
 
 ## 5. Server functions for mutations / server-only fetches
 

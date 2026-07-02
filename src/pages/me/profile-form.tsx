@@ -3,17 +3,21 @@ import { useForm } from '@tanstack/react-form'
 import { AuthErrorBanner } from '#/components/auth/auth-error-banner'
 import { AuthSubmitButton } from '#/components/auth/auth-submit-button'
 import { TextField } from '#/components/auth/text-field'
+import { AvatarUploadDropzone } from '#/components/image/avatar-upload-dropzone'
 import { getFieldError } from '#/lib/forms'
+import type { Maybe } from '#/lib/types'
 import { updateProfileFormSchema } from '#/lib/schemas/user.schema'
 import type { UpdateProfileFormInput } from '#/lib/schemas/user.schema'
 
 type ProfileFormProps = {
+  accessToken?: Maybe<string>
   initialValues: UpdateProfileFormInput
   onSubmit: (values: UpdateProfileFormInput) => Promise<void>
   errorMessage?: string | null
 }
 
 export function ProfileForm({
+  accessToken,
   initialValues,
   onSubmit,
   errorMessage,
@@ -24,7 +28,7 @@ export function ProfileForm({
     onSubmit: async ({ value }) => {
       await onSubmit({
         ...value,
-        imageUrl: value.imageUrl?.trim() ? value.imageUrl.trim() : undefined,
+        imageKey: value.imageKey?.trim() ? value.imageKey.trim() : undefined,
       })
     },
   })
@@ -80,22 +84,17 @@ export function ProfileForm({
       </div>
 
       <form.Field
-        name="imageUrl"
-        validators={{ onChange: updateProfileFormSchema.shape.imageUrl }}
+        name="imageKey"
+        validators={{ onChange: updateProfileFormSchema.shape.imageKey }}
       >
         {(field) => (
-          <TextField
-            id={field.name}
-            name={field.name}
-            type="url"
-            label="Avatar URL"
-            autoComplete="off"
-            placeholder="https://example.com/avatar.png"
-            value={field.state.value ?? ''}
-            onBlur={field.handleBlur}
-            onChange={(event) => field.handleChange(event.target.value)}
+          <AvatarUploadDropzone
+            accessToken={accessToken}
+            imageKey={field.state.value}
+            defaultImageKey={initialValues.imageKey}
+            onImageKeyChange={(key) => field.handleChange(key ?? '')}
             error={getFieldError(field.state.meta)}
-            description="Optional. Leave empty to keep the current avatar."
+            description="Optional. Upload a new image or reset to your saved avatar."
           />
         )}
       </form.Field>

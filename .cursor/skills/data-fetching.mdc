@@ -1,0 +1,48 @@
+---
+description: Add a typed server-state query or mutation with TanStack Query. Use when adding a new API call, cache entry, or invalidation from the frontend.
+alwaysApply: false
+---
+
+# Data Fetching Skill
+
+## Queries
+
+1. **API function** in `src/lib/api/<resource>.ts` — wrap `apiRequest()`, Zod-parse responses, pass `signal`
+2. **Query key** in `src/lib/query/keys.ts`
+3. **Query options** in `src/lib/query/<resource>.ts` — `queryOptions()` factory + `invalidate*Queries()`
+4. **Consume** in a loader (`context.queryClient.fetchQuery`) or component (`useQuery`)
+
+## Mutations (POST / PATCH / PUT / DELETE)
+
+1. **API write function** already in `src/lib/api/<resource>.ts`
+2. **Mutation key** in `keys.ts` via `*.mutation(action, accessToken)`
+3. **`createMutationOptions()`** in `src/lib/query/mutation.ts` inside a `*Mutations()` factory
+4. **Consume** with `useMutation(resourceMutations(…).action)`
+
+```ts
+const queryClient = useQueryClient()
+const addToCart = useMutation(cartMutations(accessToken, queryClient).addItem)
+
+await addToCart.mutateAsync({ skuId, quantity, idempotencyKey })
+```
+
+`afterSuccess` in the factory handles cache invalidation. When data comes from a route loader, also call `router.invalidate()` after `mutateAsync`.
+
+## Available factories
+
+`cartMutations`, `userMutations`, `personalAddressMutations`, `shopAddressMutations`, `productMutations`, `categoryMutations`
+
+## Constraints
+
+- No raw `fetch` / `apiRequest` in components
+- Server state stays in Query cache — never copy into `@tanstack/store`
+- Keys in `keys.ts` only — never inline
+- Use `*Mutations()` factories — don't hand-roll `useMutation({ mutationFn })` in components
+- Auth redirect flows (sign-in, sign-up) stay as direct API calls
+
+## Anti-patterns
+
+- Inline query/mutation keys
+- Manual `useState` for mutation pending when `mutation.isPending` suffices
+- Skipping Zod validation on API responses
+- Creating a second `QueryClient`

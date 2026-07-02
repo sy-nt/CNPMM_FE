@@ -12,15 +12,52 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as MeRouteImport } from './routes/me'
+import { Route as ManageRouteImport } from './routes/manage'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ForbiddenRouteImport } from './routes/forbidden'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as ActivateRouteImport } from './routes/activate'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MeIndexRouteImport } from './routes/me.index'
+import { Route as ManageIndexRouteImport } from './routes/manage.index'
+import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as ProductSlugRouteImport } from './routes/product.$slug'
+import { Route as MeShopRouteImport } from './routes/me.shop'
+import { Route as MeOrdersRouteImport } from './routes/me.orders'
+import { Route as MeNotificationsRouteImport } from './routes/me.notifications'
+import { Route as MeDiscountsRouteImport } from './routes/me.discounts'
+import { Route as MeAddressesRouteImport } from './routes/me.addresses'
+import { Route as ManageWarehousesRouteImport } from './routes/manage.warehouses'
+import { Route as ManageUsersRouteImport } from './routes/manage.users'
+import { Route as ManageStaffRosterRouteImport } from './routes/manage.staff-roster'
+import { Route as ManageShopsRouteImport } from './routes/manage.shops'
+import { Route as ManageShopRouteImport } from './routes/manage.shop'
+import { Route as ManageRolesRouteImport } from './routes/manage.roles'
+import { Route as ManageProductsRouteImport } from './routes/manage.products'
+import { Route as ManageOrdersRouteImport } from './routes/manage.orders'
+import { Route as ManageModeratorsRouteImport } from './routes/manage.moderators'
+import { Route as ManageInventoryRouteImport } from './routes/manage.inventory'
+import { Route as ManageDiscountsRouteImport } from './routes/manage.discounts'
+import { Route as ManageDeliveryRouteImport } from './routes/manage.delivery'
+import { Route as ManageDeliveriesRouteImport } from './routes/manage.deliveries'
+import { Route as ManageCategoriesRouteImport } from './routes/manage.categories'
+import { Route as ManageShopIndexRouteImport } from './routes/manage.shop.index'
+import { Route as ManageShopWorkersRouteImport } from './routes/manage.shop.workers'
+import { Route as ManageShopWarehousesRouteImport } from './routes/manage.shop.warehouses'
+import { Route as ManageShopStaffRouteImport } from './routes/manage.shop.staff'
+import { Route as ManageShopProductsRouteImport } from './routes/manage.shop.products'
+import { Route as ManageShopOrdersRouteImport } from './routes/manage.shop.orders'
+import { Route as ManageShopModeratorsRouteImport } from './routes/manage.shop.moderators'
+import { Route as ManageShopInventoryRouteImport } from './routes/manage.shop.inventory'
+import { Route as ManageShopImagesRouteImport } from './routes/manage.shop.images'
+import { Route as ManageShopDiscountsRouteImport } from './routes/manage.shop.discounts'
+import { Route as ManageShopDeliveriesRouteImport } from './routes/manage.shop.deliveries'
+import { Route as ManageShopCatalogRouteImport } from './routes/manage.shop.catalog'
+import { Route as ManageShopAddressesRouteImport } from './routes/manage.shop.addresses'
 
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
@@ -35,6 +72,11 @@ const SignInRoute = SignInRouteImport.update({
 const MeRoute = MeRouteImport.update({
   id: '/me',
   path: '/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManageRoute = ManageRouteImport.update({
+  id: '/manage',
+  path: '/manage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HelpRoute = HelpRouteImport.update({
@@ -57,6 +99,11 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CartRoute = CartRouteImport.update({
   id: '/cart',
   path: '/cart',
@@ -77,10 +124,185 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeIndexRoute = MeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MeRoute,
+} as any)
+const ManageIndexRoute = ManageIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ShopSlugRoute = ShopSlugRouteImport.update({
+  id: '/shop/$slug',
+  path: '/shop/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductSlugRoute = ProductSlugRouteImport.update({
   id: '/product/$slug',
   path: '/product/$slug',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MeShopRoute = MeShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
+  getParentRoute: () => MeRoute,
+} as any)
+const MeOrdersRoute = MeOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => MeRoute,
+} as any)
+const MeNotificationsRoute = MeNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => MeRoute,
+} as any)
+const MeDiscountsRoute = MeDiscountsRouteImport.update({
+  id: '/discounts',
+  path: '/discounts',
+  getParentRoute: () => MeRoute,
+} as any)
+const MeAddressesRoute = MeAddressesRouteImport.update({
+  id: '/addresses',
+  path: '/addresses',
+  getParentRoute: () => MeRoute,
+} as any)
+const ManageWarehousesRoute = ManageWarehousesRouteImport.update({
+  id: '/warehouses',
+  path: '/warehouses',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageUsersRoute = ManageUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageStaffRosterRoute = ManageStaffRosterRouteImport.update({
+  id: '/staff-roster',
+  path: '/staff-roster',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageShopsRoute = ManageShopsRouteImport.update({
+  id: '/shops',
+  path: '/shops',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageShopRoute = ManageShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageRolesRoute = ManageRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageProductsRoute = ManageProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageOrdersRoute = ManageOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageModeratorsRoute = ManageModeratorsRouteImport.update({
+  id: '/moderators',
+  path: '/moderators',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageInventoryRoute = ManageInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageDiscountsRoute = ManageDiscountsRouteImport.update({
+  id: '/discounts',
+  path: '/discounts',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageDeliveryRoute = ManageDeliveryRouteImport.update({
+  id: '/delivery',
+  path: '/delivery',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageDeliveriesRoute = ManageDeliveriesRouteImport.update({
+  id: '/deliveries',
+  path: '/deliveries',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageCategoriesRoute = ManageCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => ManageRoute,
+} as any)
+const ManageShopIndexRoute = ManageShopIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopWorkersRoute = ManageShopWorkersRouteImport.update({
+  id: '/workers',
+  path: '/workers',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopWarehousesRoute = ManageShopWarehousesRouteImport.update({
+  id: '/warehouses',
+  path: '/warehouses',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopStaffRoute = ManageShopStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopProductsRoute = ManageShopProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopOrdersRoute = ManageShopOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopModeratorsRoute = ManageShopModeratorsRouteImport.update({
+  id: '/moderators',
+  path: '/moderators',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopInventoryRoute = ManageShopInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopImagesRoute = ManageShopImagesRouteImport.update({
+  id: '/images',
+  path: '/images',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopDiscountsRoute = ManageShopDiscountsRouteImport.update({
+  id: '/discounts',
+  path: '/discounts',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopDeliveriesRoute = ManageShopDeliveriesRouteImport.update({
+  id: '/deliveries',
+  path: '/deliveries',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopCatalogRoute = ManageShopCatalogRouteImport.update({
+  id: '/catalog',
+  path: '/catalog',
+  getParentRoute: () => ManageShopRoute,
+} as any)
+const ManageShopAddressesRoute = ManageShopAddressesRouteImport.update({
+  id: '/addresses',
+  path: '/addresses',
+  getParentRoute: () => ManageShopRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -88,28 +310,99 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/activate': typeof ActivateRoute
   '/cart': typeof CartRoute
+  '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
   '/forbidden': typeof ForbiddenRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
-  '/me': typeof MeRoute
+  '/manage': typeof ManageRouteWithChildren
+  '/me': typeof MeRouteWithChildren
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/manage/categories': typeof ManageCategoriesRoute
+  '/manage/deliveries': typeof ManageDeliveriesRoute
+  '/manage/delivery': typeof ManageDeliveryRoute
+  '/manage/discounts': typeof ManageDiscountsRoute
+  '/manage/inventory': typeof ManageInventoryRoute
+  '/manage/moderators': typeof ManageModeratorsRoute
+  '/manage/orders': typeof ManageOrdersRoute
+  '/manage/products': typeof ManageProductsRoute
+  '/manage/roles': typeof ManageRolesRoute
+  '/manage/shop': typeof ManageShopRouteWithChildren
+  '/manage/shops': typeof ManageShopsRoute
+  '/manage/staff-roster': typeof ManageStaffRosterRoute
+  '/manage/users': typeof ManageUsersRoute
+  '/manage/warehouses': typeof ManageWarehousesRoute
+  '/me/addresses': typeof MeAddressesRoute
+  '/me/discounts': typeof MeDiscountsRoute
+  '/me/notifications': typeof MeNotificationsRoute
+  '/me/orders': typeof MeOrdersRoute
+  '/me/shop': typeof MeShopRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/shop/$slug': typeof ShopSlugRoute
+  '/manage/': typeof ManageIndexRoute
+  '/me/': typeof MeIndexRoute
+  '/manage/shop/addresses': typeof ManageShopAddressesRoute
+  '/manage/shop/catalog': typeof ManageShopCatalogRoute
+  '/manage/shop/deliveries': typeof ManageShopDeliveriesRoute
+  '/manage/shop/discounts': typeof ManageShopDiscountsRoute
+  '/manage/shop/images': typeof ManageShopImagesRoute
+  '/manage/shop/inventory': typeof ManageShopInventoryRoute
+  '/manage/shop/moderators': typeof ManageShopModeratorsRoute
+  '/manage/shop/orders': typeof ManageShopOrdersRoute
+  '/manage/shop/products': typeof ManageShopProductsRoute
+  '/manage/shop/staff': typeof ManageShopStaffRoute
+  '/manage/shop/warehouses': typeof ManageShopWarehousesRoute
+  '/manage/shop/workers': typeof ManageShopWorkersRoute
+  '/manage/shop/': typeof ManageShopIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/activate': typeof ActivateRoute
   '/cart': typeof CartRoute
+  '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
   '/forbidden': typeof ForbiddenRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
-  '/me': typeof MeRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/manage/categories': typeof ManageCategoriesRoute
+  '/manage/deliveries': typeof ManageDeliveriesRoute
+  '/manage/delivery': typeof ManageDeliveryRoute
+  '/manage/discounts': typeof ManageDiscountsRoute
+  '/manage/inventory': typeof ManageInventoryRoute
+  '/manage/moderators': typeof ManageModeratorsRoute
+  '/manage/orders': typeof ManageOrdersRoute
+  '/manage/products': typeof ManageProductsRoute
+  '/manage/roles': typeof ManageRolesRoute
+  '/manage/shops': typeof ManageShopsRoute
+  '/manage/staff-roster': typeof ManageStaffRosterRoute
+  '/manage/users': typeof ManageUsersRoute
+  '/manage/warehouses': typeof ManageWarehousesRoute
+  '/me/addresses': typeof MeAddressesRoute
+  '/me/discounts': typeof MeDiscountsRoute
+  '/me/notifications': typeof MeNotificationsRoute
+  '/me/orders': typeof MeOrdersRoute
+  '/me/shop': typeof MeShopRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/shop/$slug': typeof ShopSlugRoute
+  '/manage': typeof ManageIndexRoute
+  '/me': typeof MeIndexRoute
+  '/manage/shop/addresses': typeof ManageShopAddressesRoute
+  '/manage/shop/catalog': typeof ManageShopCatalogRoute
+  '/manage/shop/deliveries': typeof ManageShopDeliveriesRoute
+  '/manage/shop/discounts': typeof ManageShopDiscountsRoute
+  '/manage/shop/images': typeof ManageShopImagesRoute
+  '/manage/shop/inventory': typeof ManageShopInventoryRoute
+  '/manage/shop/moderators': typeof ManageShopModeratorsRoute
+  '/manage/shop/orders': typeof ManageShopOrdersRoute
+  '/manage/shop/products': typeof ManageShopProductsRoute
+  '/manage/shop/staff': typeof ManageShopStaffRoute
+  '/manage/shop/warehouses': typeof ManageShopWarehousesRoute
+  '/manage/shop/workers': typeof ManageShopWorkersRoute
+  '/manage/shop': typeof ManageShopIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -117,14 +410,51 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/activate': typeof ActivateRoute
   '/cart': typeof CartRoute
+  '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
   '/forbidden': typeof ForbiddenRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
-  '/me': typeof MeRoute
+  '/manage': typeof ManageRouteWithChildren
+  '/me': typeof MeRouteWithChildren
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/manage/categories': typeof ManageCategoriesRoute
+  '/manage/deliveries': typeof ManageDeliveriesRoute
+  '/manage/delivery': typeof ManageDeliveryRoute
+  '/manage/discounts': typeof ManageDiscountsRoute
+  '/manage/inventory': typeof ManageInventoryRoute
+  '/manage/moderators': typeof ManageModeratorsRoute
+  '/manage/orders': typeof ManageOrdersRoute
+  '/manage/products': typeof ManageProductsRoute
+  '/manage/roles': typeof ManageRolesRoute
+  '/manage/shop': typeof ManageShopRouteWithChildren
+  '/manage/shops': typeof ManageShopsRoute
+  '/manage/staff-roster': typeof ManageStaffRosterRoute
+  '/manage/users': typeof ManageUsersRoute
+  '/manage/warehouses': typeof ManageWarehousesRoute
+  '/me/addresses': typeof MeAddressesRoute
+  '/me/discounts': typeof MeDiscountsRoute
+  '/me/notifications': typeof MeNotificationsRoute
+  '/me/orders': typeof MeOrdersRoute
+  '/me/shop': typeof MeShopRoute
   '/product/$slug': typeof ProductSlugRoute
+  '/shop/$slug': typeof ShopSlugRoute
+  '/manage/': typeof ManageIndexRoute
+  '/me/': typeof MeIndexRoute
+  '/manage/shop/addresses': typeof ManageShopAddressesRoute
+  '/manage/shop/catalog': typeof ManageShopCatalogRoute
+  '/manage/shop/deliveries': typeof ManageShopDeliveriesRoute
+  '/manage/shop/discounts': typeof ManageShopDiscountsRoute
+  '/manage/shop/images': typeof ManageShopImagesRoute
+  '/manage/shop/inventory': typeof ManageShopInventoryRoute
+  '/manage/shop/moderators': typeof ManageShopModeratorsRoute
+  '/manage/shop/orders': typeof ManageShopOrdersRoute
+  '/manage/shop/products': typeof ManageShopProductsRoute
+  '/manage/shop/staff': typeof ManageShopStaffRoute
+  '/manage/shop/warehouses': typeof ManageShopWarehousesRoute
+  '/manage/shop/workers': typeof ManageShopWorkersRoute
+  '/manage/shop/': typeof ManageShopIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -133,42 +463,150 @@ export interface FileRouteTypes {
     | '/about'
     | '/activate'
     | '/cart'
+    | '/checkout'
     | '/contact'
     | '/forbidden'
     | '/forgot-password'
     | '/help'
+    | '/manage'
     | '/me'
     | '/sign-in'
     | '/sign-up'
+    | '/manage/categories'
+    | '/manage/deliveries'
+    | '/manage/delivery'
+    | '/manage/discounts'
+    | '/manage/inventory'
+    | '/manage/moderators'
+    | '/manage/orders'
+    | '/manage/products'
+    | '/manage/roles'
+    | '/manage/shop'
+    | '/manage/shops'
+    | '/manage/staff-roster'
+    | '/manage/users'
+    | '/manage/warehouses'
+    | '/me/addresses'
+    | '/me/discounts'
+    | '/me/notifications'
+    | '/me/orders'
+    | '/me/shop'
     | '/product/$slug'
+    | '/shop/$slug'
+    | '/manage/'
+    | '/me/'
+    | '/manage/shop/addresses'
+    | '/manage/shop/catalog'
+    | '/manage/shop/deliveries'
+    | '/manage/shop/discounts'
+    | '/manage/shop/images'
+    | '/manage/shop/inventory'
+    | '/manage/shop/moderators'
+    | '/manage/shop/orders'
+    | '/manage/shop/products'
+    | '/manage/shop/staff'
+    | '/manage/shop/warehouses'
+    | '/manage/shop/workers'
+    | '/manage/shop/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/activate'
     | '/cart'
+    | '/checkout'
     | '/contact'
     | '/forbidden'
     | '/forgot-password'
     | '/help'
-    | '/me'
     | '/sign-in'
     | '/sign-up'
+    | '/manage/categories'
+    | '/manage/deliveries'
+    | '/manage/delivery'
+    | '/manage/discounts'
+    | '/manage/inventory'
+    | '/manage/moderators'
+    | '/manage/orders'
+    | '/manage/products'
+    | '/manage/roles'
+    | '/manage/shops'
+    | '/manage/staff-roster'
+    | '/manage/users'
+    | '/manage/warehouses'
+    | '/me/addresses'
+    | '/me/discounts'
+    | '/me/notifications'
+    | '/me/orders'
+    | '/me/shop'
     | '/product/$slug'
+    | '/shop/$slug'
+    | '/manage'
+    | '/me'
+    | '/manage/shop/addresses'
+    | '/manage/shop/catalog'
+    | '/manage/shop/deliveries'
+    | '/manage/shop/discounts'
+    | '/manage/shop/images'
+    | '/manage/shop/inventory'
+    | '/manage/shop/moderators'
+    | '/manage/shop/orders'
+    | '/manage/shop/products'
+    | '/manage/shop/staff'
+    | '/manage/shop/warehouses'
+    | '/manage/shop/workers'
+    | '/manage/shop'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/activate'
     | '/cart'
+    | '/checkout'
     | '/contact'
     | '/forbidden'
     | '/forgot-password'
     | '/help'
+    | '/manage'
     | '/me'
     | '/sign-in'
     | '/sign-up'
+    | '/manage/categories'
+    | '/manage/deliveries'
+    | '/manage/delivery'
+    | '/manage/discounts'
+    | '/manage/inventory'
+    | '/manage/moderators'
+    | '/manage/orders'
+    | '/manage/products'
+    | '/manage/roles'
+    | '/manage/shop'
+    | '/manage/shops'
+    | '/manage/staff-roster'
+    | '/manage/users'
+    | '/manage/warehouses'
+    | '/me/addresses'
+    | '/me/discounts'
+    | '/me/notifications'
+    | '/me/orders'
+    | '/me/shop'
     | '/product/$slug'
+    | '/shop/$slug'
+    | '/manage/'
+    | '/me/'
+    | '/manage/shop/addresses'
+    | '/manage/shop/catalog'
+    | '/manage/shop/deliveries'
+    | '/manage/shop/discounts'
+    | '/manage/shop/images'
+    | '/manage/shop/inventory'
+    | '/manage/shop/moderators'
+    | '/manage/shop/orders'
+    | '/manage/shop/products'
+    | '/manage/shop/staff'
+    | '/manage/shop/warehouses'
+    | '/manage/shop/workers'
+    | '/manage/shop/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -176,14 +614,17 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   ActivateRoute: typeof ActivateRoute
   CartRoute: typeof CartRoute
+  CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
   ForbiddenRoute: typeof ForbiddenRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   HelpRoute: typeof HelpRoute
-  MeRoute: typeof MeRoute
+  ManageRoute: typeof ManageRouteWithChildren
+  MeRoute: typeof MeRouteWithChildren
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   ProductSlugRoute: typeof ProductSlugRoute
+  ShopSlugRoute: typeof ShopSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -207,6 +648,13 @@ declare module '@tanstack/react-router' {
       path: '/me'
       fullPath: '/me'
       preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manage': {
+      id: '/manage'
+      path: '/manage'
+      fullPath: '/manage'
+      preLoaderRoute: typeof ManageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/help': {
@@ -237,6 +685,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cart': {
       id: '/cart'
       path: '/cart'
@@ -265,6 +720,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/me/': {
+      id: '/me/'
+      path: '/'
+      fullPath: '/me/'
+      preLoaderRoute: typeof MeIndexRouteImport
+      parentRoute: typeof MeRoute
+    }
+    '/manage/': {
+      id: '/manage/'
+      path: '/'
+      fullPath: '/manage/'
+      preLoaderRoute: typeof ManageIndexRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/shop/$slug': {
+      id: '/shop/$slug'
+      path: '/shop/$slug'
+      fullPath: '/shop/$slug'
+      preLoaderRoute: typeof ShopSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/product/$slug': {
       id: '/product/$slug'
       path: '/product/$slug'
@@ -272,22 +748,344 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/me/shop': {
+      id: '/me/shop'
+      path: '/shop'
+      fullPath: '/me/shop'
+      preLoaderRoute: typeof MeShopRouteImport
+      parentRoute: typeof MeRoute
+    }
+    '/me/orders': {
+      id: '/me/orders'
+      path: '/orders'
+      fullPath: '/me/orders'
+      preLoaderRoute: typeof MeOrdersRouteImport
+      parentRoute: typeof MeRoute
+    }
+    '/me/notifications': {
+      id: '/me/notifications'
+      path: '/notifications'
+      fullPath: '/me/notifications'
+      preLoaderRoute: typeof MeNotificationsRouteImport
+      parentRoute: typeof MeRoute
+    }
+    '/me/discounts': {
+      id: '/me/discounts'
+      path: '/discounts'
+      fullPath: '/me/discounts'
+      preLoaderRoute: typeof MeDiscountsRouteImport
+      parentRoute: typeof MeRoute
+    }
+    '/me/addresses': {
+      id: '/me/addresses'
+      path: '/addresses'
+      fullPath: '/me/addresses'
+      preLoaderRoute: typeof MeAddressesRouteImport
+      parentRoute: typeof MeRoute
+    }
+    '/manage/warehouses': {
+      id: '/manage/warehouses'
+      path: '/warehouses'
+      fullPath: '/manage/warehouses'
+      preLoaderRoute: typeof ManageWarehousesRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/users': {
+      id: '/manage/users'
+      path: '/users'
+      fullPath: '/manage/users'
+      preLoaderRoute: typeof ManageUsersRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/staff-roster': {
+      id: '/manage/staff-roster'
+      path: '/staff-roster'
+      fullPath: '/manage/staff-roster'
+      preLoaderRoute: typeof ManageStaffRosterRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/shops': {
+      id: '/manage/shops'
+      path: '/shops'
+      fullPath: '/manage/shops'
+      preLoaderRoute: typeof ManageShopsRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/shop': {
+      id: '/manage/shop'
+      path: '/shop'
+      fullPath: '/manage/shop'
+      preLoaderRoute: typeof ManageShopRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/roles': {
+      id: '/manage/roles'
+      path: '/roles'
+      fullPath: '/manage/roles'
+      preLoaderRoute: typeof ManageRolesRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/products': {
+      id: '/manage/products'
+      path: '/products'
+      fullPath: '/manage/products'
+      preLoaderRoute: typeof ManageProductsRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/orders': {
+      id: '/manage/orders'
+      path: '/orders'
+      fullPath: '/manage/orders'
+      preLoaderRoute: typeof ManageOrdersRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/moderators': {
+      id: '/manage/moderators'
+      path: '/moderators'
+      fullPath: '/manage/moderators'
+      preLoaderRoute: typeof ManageModeratorsRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/inventory': {
+      id: '/manage/inventory'
+      path: '/inventory'
+      fullPath: '/manage/inventory'
+      preLoaderRoute: typeof ManageInventoryRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/discounts': {
+      id: '/manage/discounts'
+      path: '/discounts'
+      fullPath: '/manage/discounts'
+      preLoaderRoute: typeof ManageDiscountsRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/delivery': {
+      id: '/manage/delivery'
+      path: '/delivery'
+      fullPath: '/manage/delivery'
+      preLoaderRoute: typeof ManageDeliveryRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/deliveries': {
+      id: '/manage/deliveries'
+      path: '/deliveries'
+      fullPath: '/manage/deliveries'
+      preLoaderRoute: typeof ManageDeliveriesRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/categories': {
+      id: '/manage/categories'
+      path: '/categories'
+      fullPath: '/manage/categories'
+      preLoaderRoute: typeof ManageCategoriesRouteImport
+      parentRoute: typeof ManageRoute
+    }
+    '/manage/shop/': {
+      id: '/manage/shop/'
+      path: '/'
+      fullPath: '/manage/shop/'
+      preLoaderRoute: typeof ManageShopIndexRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/workers': {
+      id: '/manage/shop/workers'
+      path: '/workers'
+      fullPath: '/manage/shop/workers'
+      preLoaderRoute: typeof ManageShopWorkersRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/warehouses': {
+      id: '/manage/shop/warehouses'
+      path: '/warehouses'
+      fullPath: '/manage/shop/warehouses'
+      preLoaderRoute: typeof ManageShopWarehousesRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/staff': {
+      id: '/manage/shop/staff'
+      path: '/staff'
+      fullPath: '/manage/shop/staff'
+      preLoaderRoute: typeof ManageShopStaffRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/products': {
+      id: '/manage/shop/products'
+      path: '/products'
+      fullPath: '/manage/shop/products'
+      preLoaderRoute: typeof ManageShopProductsRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/orders': {
+      id: '/manage/shop/orders'
+      path: '/orders'
+      fullPath: '/manage/shop/orders'
+      preLoaderRoute: typeof ManageShopOrdersRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/moderators': {
+      id: '/manage/shop/moderators'
+      path: '/moderators'
+      fullPath: '/manage/shop/moderators'
+      preLoaderRoute: typeof ManageShopModeratorsRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/inventory': {
+      id: '/manage/shop/inventory'
+      path: '/inventory'
+      fullPath: '/manage/shop/inventory'
+      preLoaderRoute: typeof ManageShopInventoryRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/images': {
+      id: '/manage/shop/images'
+      path: '/images'
+      fullPath: '/manage/shop/images'
+      preLoaderRoute: typeof ManageShopImagesRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/discounts': {
+      id: '/manage/shop/discounts'
+      path: '/discounts'
+      fullPath: '/manage/shop/discounts'
+      preLoaderRoute: typeof ManageShopDiscountsRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/deliveries': {
+      id: '/manage/shop/deliveries'
+      path: '/deliveries'
+      fullPath: '/manage/shop/deliveries'
+      preLoaderRoute: typeof ManageShopDeliveriesRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/catalog': {
+      id: '/manage/shop/catalog'
+      path: '/catalog'
+      fullPath: '/manage/shop/catalog'
+      preLoaderRoute: typeof ManageShopCatalogRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
+    '/manage/shop/addresses': {
+      id: '/manage/shop/addresses'
+      path: '/addresses'
+      fullPath: '/manage/shop/addresses'
+      preLoaderRoute: typeof ManageShopAddressesRouteImport
+      parentRoute: typeof ManageShopRoute
+    }
   }
 }
+
+interface ManageShopRouteChildren {
+  ManageShopAddressesRoute: typeof ManageShopAddressesRoute
+  ManageShopCatalogRoute: typeof ManageShopCatalogRoute
+  ManageShopDeliveriesRoute: typeof ManageShopDeliveriesRoute
+  ManageShopDiscountsRoute: typeof ManageShopDiscountsRoute
+  ManageShopImagesRoute: typeof ManageShopImagesRoute
+  ManageShopInventoryRoute: typeof ManageShopInventoryRoute
+  ManageShopModeratorsRoute: typeof ManageShopModeratorsRoute
+  ManageShopOrdersRoute: typeof ManageShopOrdersRoute
+  ManageShopProductsRoute: typeof ManageShopProductsRoute
+  ManageShopStaffRoute: typeof ManageShopStaffRoute
+  ManageShopWarehousesRoute: typeof ManageShopWarehousesRoute
+  ManageShopWorkersRoute: typeof ManageShopWorkersRoute
+  ManageShopIndexRoute: typeof ManageShopIndexRoute
+}
+
+const ManageShopRouteChildren: ManageShopRouteChildren = {
+  ManageShopAddressesRoute: ManageShopAddressesRoute,
+  ManageShopCatalogRoute: ManageShopCatalogRoute,
+  ManageShopDeliveriesRoute: ManageShopDeliveriesRoute,
+  ManageShopDiscountsRoute: ManageShopDiscountsRoute,
+  ManageShopImagesRoute: ManageShopImagesRoute,
+  ManageShopInventoryRoute: ManageShopInventoryRoute,
+  ManageShopModeratorsRoute: ManageShopModeratorsRoute,
+  ManageShopOrdersRoute: ManageShopOrdersRoute,
+  ManageShopProductsRoute: ManageShopProductsRoute,
+  ManageShopStaffRoute: ManageShopStaffRoute,
+  ManageShopWarehousesRoute: ManageShopWarehousesRoute,
+  ManageShopWorkersRoute: ManageShopWorkersRoute,
+  ManageShopIndexRoute: ManageShopIndexRoute,
+}
+
+const ManageShopRouteWithChildren = ManageShopRoute._addFileChildren(
+  ManageShopRouteChildren,
+)
+
+interface ManageRouteChildren {
+  ManageCategoriesRoute: typeof ManageCategoriesRoute
+  ManageDeliveriesRoute: typeof ManageDeliveriesRoute
+  ManageDeliveryRoute: typeof ManageDeliveryRoute
+  ManageDiscountsRoute: typeof ManageDiscountsRoute
+  ManageInventoryRoute: typeof ManageInventoryRoute
+  ManageModeratorsRoute: typeof ManageModeratorsRoute
+  ManageOrdersRoute: typeof ManageOrdersRoute
+  ManageProductsRoute: typeof ManageProductsRoute
+  ManageRolesRoute: typeof ManageRolesRoute
+  ManageShopRoute: typeof ManageShopRouteWithChildren
+  ManageShopsRoute: typeof ManageShopsRoute
+  ManageStaffRosterRoute: typeof ManageStaffRosterRoute
+  ManageUsersRoute: typeof ManageUsersRoute
+  ManageWarehousesRoute: typeof ManageWarehousesRoute
+  ManageIndexRoute: typeof ManageIndexRoute
+}
+
+const ManageRouteChildren: ManageRouteChildren = {
+  ManageCategoriesRoute: ManageCategoriesRoute,
+  ManageDeliveriesRoute: ManageDeliveriesRoute,
+  ManageDeliveryRoute: ManageDeliveryRoute,
+  ManageDiscountsRoute: ManageDiscountsRoute,
+  ManageInventoryRoute: ManageInventoryRoute,
+  ManageModeratorsRoute: ManageModeratorsRoute,
+  ManageOrdersRoute: ManageOrdersRoute,
+  ManageProductsRoute: ManageProductsRoute,
+  ManageRolesRoute: ManageRolesRoute,
+  ManageShopRoute: ManageShopRouteWithChildren,
+  ManageShopsRoute: ManageShopsRoute,
+  ManageStaffRosterRoute: ManageStaffRosterRoute,
+  ManageUsersRoute: ManageUsersRoute,
+  ManageWarehousesRoute: ManageWarehousesRoute,
+  ManageIndexRoute: ManageIndexRoute,
+}
+
+const ManageRouteWithChildren =
+  ManageRoute._addFileChildren(ManageRouteChildren)
+
+interface MeRouteChildren {
+  MeAddressesRoute: typeof MeAddressesRoute
+  MeDiscountsRoute: typeof MeDiscountsRoute
+  MeNotificationsRoute: typeof MeNotificationsRoute
+  MeOrdersRoute: typeof MeOrdersRoute
+  MeShopRoute: typeof MeShopRoute
+  MeIndexRoute: typeof MeIndexRoute
+}
+
+const MeRouteChildren: MeRouteChildren = {
+  MeAddressesRoute: MeAddressesRoute,
+  MeDiscountsRoute: MeDiscountsRoute,
+  MeNotificationsRoute: MeNotificationsRoute,
+  MeOrdersRoute: MeOrdersRoute,
+  MeShopRoute: MeShopRoute,
+  MeIndexRoute: MeIndexRoute,
+}
+
+const MeRouteWithChildren = MeRoute._addFileChildren(MeRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   ActivateRoute: ActivateRoute,
   CartRoute: CartRoute,
+  CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,
   ForbiddenRoute: ForbiddenRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   HelpRoute: HelpRoute,
-  MeRoute: MeRoute,
+  ManageRoute: ManageRouteWithChildren,
+  MeRoute: MeRouteWithChildren,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   ProductSlugRoute: ProductSlugRoute,
+  ShopSlugRoute: ShopSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

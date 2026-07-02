@@ -2,9 +2,9 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 
 import { AppShell } from '#/components/layout/app-shell'
 import { LoadingFallback } from '#/components/loading-fallback'
-import { getCart } from '#/lib/api/cart'
 import { ApiError } from '#/lib/api/client'
 import { ensureAuthenticated } from '#/lib/auth-guards'
+import { cartQueryOptions } from '#/lib/query/cart'
 import type { Cart } from '#/lib/schemas/cart.schema'
 import { CartPage } from '#/pages/cart/cart-page'
 import { authStore } from '#/stores/auth.store'
@@ -21,14 +21,16 @@ export const Route = createFileRoute('/cart')({
       <LoadingFallback variant="inline" label="Loading your cart…" />
     </AppShell>
   ),
-  loader: async ({ abortController }): Promise<CartLoaderResult> => {
+  loader: async ({ context }): Promise<CartLoaderResult> => {
     const accessToken = authStore.state.accessToken
     if (!accessToken) {
       throw redirect({ to: '/sign-in' })
     }
 
     try {
-      const cart = await getCart(accessToken, abortController.signal)
+      const cart = await context.queryClient.ensureQueryData(
+        cartQueryOptions(accessToken),
+      )
       return { cart }
     } catch (error) {
       if (

@@ -1,11 +1,8 @@
-import { invalidateCacheByPrefix, withCache } from '#/lib/api/cache'
 import { apiRequest } from '#/lib/api/client'
 import { buildIdempotencyHeaders } from '#/lib/api/common'
 import type { IdempotencyKey } from '#/lib/api/common'
 import { cartSchema } from '#/lib/schemas/cart.schema'
 import type { Cart } from '#/lib/schemas/cart.schema'
-
-const CART_CACHE_PREFIX = 'cart:'
 
 export type AddCartItemInput = {
   skuId: string
@@ -16,26 +13,16 @@ export type UpdateCartItemQuantityInput = {
   quantity: number
 }
 
-export function getCart(
+export async function getCart(
   accessToken: string,
   signal?: AbortSignal,
 ): Promise<Cart> {
-  return withCache(
-    { key: `${CART_CACHE_PREFIX}${accessToken}` },
-    async (innerSignal) => {
-      const data = await apiRequest<unknown>('/cart/', {
-        method: 'GET',
-        accessToken,
-        signal: innerSignal,
-      })
-      return cartSchema.parse(data)
-    },
+  const data = await apiRequest<unknown>('/cart/', {
+    method: 'GET',
+    accessToken,
     signal,
-  )
-}
-
-export function invalidateCart(): void {
-  invalidateCacheByPrefix(CART_CACHE_PREFIX)
+  })
+  return cartSchema.parse(data)
 }
 
 export function clearCart(

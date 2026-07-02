@@ -1,22 +1,45 @@
 import { invalidateCacheByPrefix, withCache } from '#/lib/api/cache'
 import { apiRequest } from '#/lib/api/client'
-import type { PaginationQuery } from '#/lib/api/common'
-import { userSchema } from '#/lib/schemas/user.schema'
-import type { User } from '#/lib/schemas/user.schema'
+import type { PaginationSort } from '#/lib/api/common'
+import {
+  adminUserListResponseSchema,
+  assignModeratorInputSchema,
+  blockUserInputSchema,
+  updateCurrentUserInputSchema,
+  userSchema,
+} from '#/lib/schemas/user.schema'
+import type {
+  AdminUserListResponse,
+  AssignModeratorInput,
+  BlockUserInput,
+  UpdateCurrentUserInput,
+  User,
+} from '#/lib/schemas/user.schema'
 
 const CURRENT_USER_CACHE_PREFIX = 'user:current:'
 
-export type UpdateCurrentUserInput = {
-  firstName?: string
-  lastName?: string
-  imageUrl?: string
+export type AdminUserListQuery = {
+  lastId?: string
+  limit?: number
+  sort?: PaginationSort
+  email?: string
 }
 
-export type BlockUserInput = {
-  email: string
-}
+export type { AssignModeratorInput, BlockUserInput, UpdateCurrentUserInput }
 
-export type UserListQuery = PaginationQuery<'createdAt' | 'updatedAt' | 'email'>
+export async function listUsers(
+  accessToken: string,
+  query: AdminUserListQuery = {},
+  signal?: AbortSignal,
+): Promise<AdminUserListResponse> {
+  const raw = await apiRequest<unknown>('/admin/users/', {
+    method: 'GET',
+    accessToken,
+    query,
+    signal,
+  })
+  return adminUserListResponseSchema.parse(raw)
+}
 
 export function getCurrentUser(
   accessToken: string,
@@ -41,10 +64,11 @@ export function updateCurrentUser(
   input: UpdateCurrentUserInput,
   signal?: AbortSignal,
 ): Promise<User> {
+  const body = updateCurrentUserInputSchema.parse(input)
   return apiRequest<unknown>('/user/', {
     method: 'PATCH',
     accessToken,
-    body: input,
+    body,
     signal,
   }).then((data) => userSchema.parse(data))
 }
@@ -65,18 +89,25 @@ export function blockUser(
   input: BlockUserInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
+  const body = blockUserInputSchema.parse(input)
   return apiRequest('/user/block', {
     method: 'POST',
     accessToken,
-    body: input,
+    body,
     signal,
   })
 }
 
-export function listUsers(
+export function assignModerator(
   accessToken: string,
-  query: UserListQuery = {},
+  input: AssignModeratorInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest('/users/', { method: 'GET', accessToken, query, signal })
+  const body = assignModeratorInputSchema.parse(input)
+  return apiRequest('/admin/users/moderator', {
+    method: 'POST',
+    accessToken,
+    body,
+    signal,
+  })
 }

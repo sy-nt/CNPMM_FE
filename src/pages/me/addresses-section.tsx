@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -10,13 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
-import {
-  createPersonalAddress,
-  deletePersonalAddress,
-  invalidatePersonalAddresses,
-  updatePersonalAddress,
-} from '#/lib/api/address'
 import { ApiError } from '#/lib/api/client'
+import { personalAddressMutations } from '#/lib/query/address'
 import type {
   AddressFormInput,
   PersonalAddress,
@@ -41,11 +37,15 @@ export function AddressesSection({
   const [createError, setCreateError] = useState<string | null>(null)
   const [editError, setEditError] = useState<string | null>(null)
 
+  const mutations = personalAddressMutations(accessToken)
+  const createAddress = useMutation(mutations.create)
+  const updateAddress = useMutation(mutations.update)
+  const deleteAddress = useMutation(mutations.delete)
+
   const handleCreate = async (values: AddressFormInput): Promise<void> => {
     setCreateError(null)
     try {
-      await createPersonalAddress(accessToken, _toCreateInput(values))
-      invalidatePersonalAddresses()
+      await createAddress.mutateAsync(_toCreateInput(values))
       toast.success('Address added.')
       setIsCreating(false)
       await onChange()
@@ -62,12 +62,10 @@ export function AddressesSection({
     return async (values) => {
       setEditError(null)
       try {
-        await updatePersonalAddress(
-          accessToken,
-          address.id,
-          _toUpdateInput(values, address),
-        )
-        invalidatePersonalAddresses()
+        await updateAddress.mutateAsync({
+          addressId: address.id,
+          input: _toUpdateInput(values, address),
+        })
         toast.success('Address updated.')
         setEditingId(null)
         await onChange()
@@ -82,8 +80,7 @@ export function AddressesSection({
   const handleDelete = (address: PersonalAddress): (() => Promise<void>) => {
     return async () => {
       try {
-        await deletePersonalAddress(accessToken, address.id)
-        invalidatePersonalAddresses()
+        await deleteAddress.mutateAsync(address.id)
         toast.success('Address removed.')
         if (editingId === address.id) setEditingId(null)
         await onChange()
@@ -130,6 +127,7 @@ export function AddressesSection({
           </CardHeader>
           <CardContent>
             <AddressForm
+              formId="new-address"
               initialValues={EMPTY_ADDRESS_FORM}
               submitLabel="Add address"
               pendingLabel="Adding…"
@@ -152,7 +150,7 @@ export function AddressesSection({
         </Card>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid items-start gap-4 sm:grid-cols-2">
         {addresses.map((address) => (
           <AddressCard
             key={address.id}

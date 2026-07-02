@@ -1,0 +1,1 @@
+export const MANAGE_TABLE_PAGE_SIZE = 10

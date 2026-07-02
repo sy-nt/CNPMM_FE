@@ -1,10 +1,13 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
+
+import type { RouterContext } from '#/router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import appCss from '../styles.css?url'
 
 import { AuthBootstrap } from '#/components/auth/auth-bootstrap'
+import { NotificationBootstrap } from '#/components/notification/notification-bootstrap'
 import { ThemeProvider } from '#/components/theme-provider'
 import { Toaster } from '#/components/ui/sonner'
 import { THEME_STORAGE_KEY } from '#/stores/theme.store'
@@ -28,7 +31,7 @@ const _themeBootScript = `
 })();
 `.trim()
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       {
@@ -62,6 +65,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <ThemeProvider>
           <AuthBootstrap />
+          <NotificationBootstrap />
           {children}
           <Toaster richColors closeButton position="top-right" />
         </ThemeProvider>

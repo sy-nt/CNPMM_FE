@@ -58,3 +58,13 @@ export const SHOP_ADDRESS_PERMISSIONS = buildModulePermissionsMap(
     UPDATE: 'update',
   } as const,
 )
+
+export const SHOP_IMAGE_PERMISSIONS = buildModulePermissionsMap(
+  { SHOP_IMAGE: 'shop_image' } as const,
+  {
+    CREATE_PRESIGNED_URL: 'create-presigned-url',
+    DELETE: 'delete',
+    READ: 'read',
+    UPLOAD: 'upload',
+  } as const,
+)

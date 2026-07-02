@@ -1,5 +1,17 @@
 import { apiRequest } from '#/lib/api/client'
 import type { PaginationQuery } from '#/lib/api/common'
+import {
+  deliveryListResponseSchema,
+  deliveryMethodListSchema,
+  deliveryRateListResponseSchema,
+  deliveryZoneListSchema,
+} from '#/lib/schemas/delivery.schema'
+import type {
+  DeliveryListResponse,
+  DeliveryMethodList,
+  DeliveryRateListResponse,
+  DeliveryZoneList,
+} from '#/lib/schemas/delivery.schema'
 
 export type DeliveryListQuery = PaginationQuery<'createdAt' | 'updatedAt'>
 export type DeliveryRateListQuery = PaginationQuery<'createdAt' | 'updatedAt'>
@@ -91,17 +103,18 @@ export function updateDeliveryStatus(
   })
 }
 
-export function listDeliveries(
+export async function listDeliveries(
   accessToken: string,
   query: DeliveryListQuery = {},
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/deliveries/', {
+): Promise<DeliveryListResponse> {
+  const raw = await apiRequest<unknown>('/deliveries/', {
     method: 'GET',
     accessToken,
     query,
     signal,
   })
+  return deliveryListResponseSchema.parse(raw)
 }
 
 export function createDeliveryMethod(
@@ -129,15 +142,17 @@ export function getDeliveryMethod(
   })
 }
 
-export function listDeliveryMethods(
+
+export async function listDeliveryMethods(
   accessToken: string,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/deliveries/methods', {
+): Promise<DeliveryMethodList> {
+  const raw = await apiRequest<unknown>('/deliveries/methods', {
     method: 'GET',
     accessToken,
     signal,
   })
+  return deliveryMethodListSchema.parse(raw)
 }
 
 export function updateDeliveryMethod(
@@ -179,15 +194,16 @@ export function createDeliveryZone(
   })
 }
 
-export function listDeliveryZones(
+export async function listDeliveryZones(
   accessToken: string,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/deliveries/zones', {
+): Promise<DeliveryZoneList> {
+  const raw = await apiRequest<unknown>('/deliveries/zones', {
     method: 'GET',
     accessToken,
     signal,
   })
+  return deliveryZoneListSchema.parse(raw)
 }
 
 export function updateDeliveryZone(
@@ -229,17 +245,18 @@ export function createDeliveryRate(
   })
 }
 
-export function listDeliveryRates(
+export async function listDeliveryRates(
   accessToken: string,
   query: DeliveryRateListQuery = {},
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/deliveries/rates', {
+): Promise<DeliveryRateListResponse> {
+  const raw = await apiRequest<unknown>('/deliveries/rates', {
     method: 'GET',
     accessToken,
     query,
     signal,
   })
+  return deliveryRateListResponseSchema.parse(raw)
 }
 
 export function updateDeliveryRate(

@@ -3,6 +3,7 @@ import { useForm } from '@tanstack/react-form'
 import { AuthErrorBanner } from '#/components/auth/auth-error-banner'
 import { AuthSubmitButton } from '#/components/auth/auth-submit-button'
 import { TextField } from '#/components/auth/text-field'
+import { AvatarUploadDropzone } from '#/components/image/avatar-upload-dropzone'
 import { getFieldError } from '#/lib/forms'
 import type { SignUpInput } from '#/lib/schemas/auth.schema'
 import { signUpSchema } from '#/lib/schemas/auth.schema'
@@ -17,7 +18,7 @@ const _defaultValues: SignUpInput = {
   password: '',
   firstName: '',
   lastName: '',
-  imageUrl: '',
+  imageKey: '',
 }
 
 export function SignUpForm({ onSubmit, errorMessage }: SignUpFormProps) {
@@ -27,7 +28,7 @@ export function SignUpForm({ onSubmit, errorMessage }: SignUpFormProps) {
     onSubmit: async ({ value }) => {
       const payload: SignUpInput = {
         ...value,
-        imageUrl: value.imageUrl?.trim() ? value.imageUrl.trim() : undefined,
+        imageKey: value.imageKey?.trim() ? value.imageKey.trim() : undefined,
       }
       await onSubmit(payload)
     },
@@ -125,22 +126,14 @@ export function SignUpForm({ onSubmit, errorMessage }: SignUpFormProps) {
       </form.Field>
 
       <form.Field
-        name="imageUrl"
-        validators={{ onChange: signUpSchema.shape.imageUrl }}
+        name="imageKey"
+        validators={{ onChange: signUpSchema.shape.imageKey }}
       >
         {(field) => (
-          <TextField
-            id={field.name}
-            name={field.name}
-            type="url"
-            label="Avatar URL"
-            autoComplete="off"
-            placeholder="https://example.com/avatar.png"
-            value={field.state.value ?? ''}
-            onBlur={field.handleBlur}
-            onChange={(event) => field.handleChange(event.target.value)}
+          <AvatarUploadDropzone
+            imageKey={field.state.value}
+            onImageKeyChange={(key) => field.handleChange(key ?? '')}
             error={getFieldError(field.state.meta)}
-            description="Optional."
           />
         )}
       </form.Field>

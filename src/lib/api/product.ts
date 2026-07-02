@@ -1,5 +1,5 @@
-import { invalidateCacheByPrefix, withCache } from '#/lib/api/cache'
-import { apiRequest } from '#/lib/api/client'
+import { ApiError, apiRequest } from '#/lib/api/client'
+import { getMyShopDetails } from '#/lib/api/shop'
 import type { PaginationQuery } from '#/lib/api/common'
 import {
   productDetailSchema,
@@ -11,10 +11,9 @@ import type {
   ProductSummary,
 } from '#/lib/schemas/product.schema'
 import type { Maybe } from '#/lib/types'
-import { stableJsonKey } from '#/lib/utils'
 
 export type ProductListQuery = PaginationQuery<
-  'createdAt' | 'name' | 'price'
+  'createdAt' | 'name' | 'price' | 'soldCount'
 > & {
   isActive?: boolean
   categoryId?: string
@@ -22,7 +21,7 @@ export type ProductListQuery = PaginationQuery<
   search?: string
 }
 
-const PRODUCT_CACHE_PREFIX = 'product:'
+export type ShopProductListQuery = Omit<ProductListQuery, 'shopId'>
 
 export type ProductAttributeValueDraft = {
   value: string
@@ -121,24 +120,33 @@ export type UpdateAttributeValueInput = {
   displayOrder?: number
 }
 
-export function listProducts(
+export async function listProducts(
   accessToken: Maybe<string>,
   query: ProductListQuery = {},
   signal?: AbortSignal,
 ): Promise<ProductListResponse> {
-  return withCache(
-    { key: `${PRODUCT_CACHE_PREFIX}list:${stableJsonKey(query)}` },
-    async (innerSignal) => {
-      const data = await apiRequest<unknown>('/products/', {
-        method: 'GET',
-        accessToken,
-        query,
-        signal: innerSignal,
-      })
-      return productListResponseSchema.parse(data)
-    },
+  const data = await apiRequest<unknown>('/products/', {
+    method: 'GET',
+    accessToken,
+    query,
     signal,
-  )
+  })
+  return productListResponseSchema.parse(data)
+}
+
+export async function listShopProducts(
+  accessToken: string,
+  query: ShopProductListQuery = {},
+  signal?: AbortSignal,
+): Promise<ProductListResponse> {
+  const shop = await getMyShopDetails(accessToken, signal)
+  if (!shop.id) {
+    throw new ApiError('Could not resolve your shop.', 0, {
+      code: 'shop/missing-id',
+    })
+  }
+
+  return listProducts(accessToken, { ...query, shopId: shop.id }, signal)
 }
 
 export async function getRandomProductSample(
@@ -157,10 +165,6 @@ export async function getRandomProductSample(
     signal,
   )
   return _shuffleAndTake(response.items, displayCount)
-}
-
-export function invalidateProducts(): void {
-  invalidateCacheByPrefix(PRODUCT_CACHE_PREFIX)
 }
 
 function _shuffleAndTake<T>(
@@ -182,7 +186,7 @@ export function createProduct(
   input: CreateProductInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest('/product/', {
+  return apiRequest('/shop/product/', {
     method: 'POST',
     accessToken,
     body: input,
@@ -190,26 +194,36 @@ export function createProduct(
   })
 }
 
-export function getProduct(
+export async function getProduct(
   accessToken: Maybe<string>,
   idOrSlug: string,
   signal?: AbortSignal,
 ): Promise<ProductDetail> {
-  return withCache(
-    { key: `${PRODUCT_CACHE_PREFIX}detail:${idOrSlug}` },
-    async (innerSignal) => {
-      const data = await apiRequest<unknown>(
-        `/product/${encodeURIComponent(idOrSlug)}`,
-        {
-          method: 'GET',
-          accessToken,
-          signal: innerSignal,
-        },
-      )
-      return productDetailSchema.parse(data)
+  const data = await apiRequest<unknown>(
+    `/product/${encodeURIComponent(idOrSlug)}`,
+    {
+      method: 'GET',
+      accessToken,
+      signal,
     },
-    signal,
   )
+  return productDetailSchema.parse(data)
+}
+
+export async function getShopProduct(
+  accessToken: string,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<ProductDetail> {
+  const data = await apiRequest<unknown>(
+    `/shop/product/${encodeURIComponent(productId)}`,
+    {
+      method: 'GET',
+      accessToken,
+      signal,
+    },
+  )
+  return productDetailSchema.parse(data)
 }
 
 export function updateProduct(
@@ -218,7 +232,7 @@ export function updateProduct(
   input: UpdateProductInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/${productId}`, {
+  return apiRequest(`/shop/product/${productId}`, {
     method: 'PATCH',
     accessToken,
     body: input,
@@ -231,7 +245,7 @@ export function deleteProduct(
   productId: string,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/${productId}`, {
+  return apiRequest(`/shop/product/${productId}`, {
     method: 'DELETE',
     accessToken,
     signal,
@@ -244,7 +258,7 @@ export function addProductSku(
   input: AddSkuInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/${productId}/sku`, {
+  return apiRequest(`/shop/product/${productId}/sku`, {
     method: 'POST',
     accessToken,
     body: input,
@@ -258,7 +272,7 @@ export function updateProductSku(
   input: UpdateSkuInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/sku/${skuId}`, {
+  return apiRequest(`/shop/product/sku/${skuId}`, {
     method: 'PATCH',
     accessToken,
     body: input,
@@ -271,7 +285,7 @@ export function deleteProductSku(
   skuId: string,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/sku/${skuId}`, {
+  return apiRequest(`/shop/product/sku/${skuId}`, {
     method: 'DELETE',
     accessToken,
     signal,
@@ -284,7 +298,7 @@ export function setProductSkuSelections(
   input: SetSkuSelectionsInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/sku/${skuId}/selections`, {
+  return apiRequest(`/shop/product/sku/${skuId}/selections`, {
     method: 'PUT',
     accessToken,
     body: input,
@@ -298,7 +312,7 @@ export function setProductSkuInventory(
   input: SetSkuInventoryInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/sku/${skuId}/inventory`, {
+  return apiRequest(`/shop/product/sku/${skuId}/inventory`, {
     method: 'PUT',
     accessToken,
     body: input,
@@ -312,7 +326,7 @@ export function addProductAttribute(
   input: AddAttributeInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/${productId}/attribute`, {
+  return apiRequest(`/shop/product/${productId}/attribute`, {
     method: 'POST',
     accessToken,
     body: input,
@@ -326,7 +340,7 @@ export function updateProductAttribute(
   input: UpdateAttributeInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/attribute/${attributeId}`, {
+  return apiRequest(`/shop/product/attribute/${attributeId}`, {
     method: 'PATCH',
     accessToken,
     body: input,
@@ -339,7 +353,7 @@ export function deleteProductAttribute(
   attributeId: string,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/attribute/${attributeId}`, {
+  return apiRequest(`/shop/product/attribute/${attributeId}`, {
     method: 'DELETE',
     accessToken,
     signal,
@@ -352,7 +366,7 @@ export function addProductAttributeValue(
   input: AddAttributeValueInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/attribute/${attributeId}/value`, {
+  return apiRequest(`/shop/product/attribute/${attributeId}/value`, {
     method: 'POST',
     accessToken,
     body: input,
@@ -366,7 +380,7 @@ export function updateProductAttributeValue(
   input: UpdateAttributeValueInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/attribute-value/${attributeValueId}`, {
+  return apiRequest(`/shop/product/attribute-value/${attributeValueId}`, {
     method: 'PATCH',
     accessToken,
     body: input,
@@ -379,7 +393,7 @@ export function deleteProductAttributeValue(
   attributeValueId: string,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/product/attribute-value/${attributeValueId}`, {
+  return apiRequest(`/shop/product/attribute-value/${attributeValueId}`, {
     method: 'DELETE',
     accessToken,
     signal,

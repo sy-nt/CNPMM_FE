@@ -1,0 +1,108 @@
+---
+description: RBAC permission registry, route guards, and UI gating patterns.
+globs:
+  - "src/**/*.{ts,tsx}"
+alwaysApply: true
+---
+
+# Permissions & Routing
+
+RBAC is client-side: permissions arrive with the user's role (`getMyRole`) and are cached in `authStore`. The backend enforces authorization on every API call — frontend gating is UX only.
+
+## Permission registry (`src/lib/rbac/constants/`)
+
+- One file per domain: `product.ts`, `cart.ts`, `role.ts`, `shop.ts`, …
+- Each exports an `as const` map (e.g. `PRODUCT_PERMISSIONS`) with string values matching backend permission names
+- `index.ts` merges all maps into `RBAC_PERMISSIONS` via `mergePermissionMaps()` and exports `PermissionName` type
+- Never use raw permission strings in feature code — import from `#/lib/rbac/constants`
+
+```ts
+export const PRODUCT_PERMISSIONS = {
+  product_create: 'product:create',
+  product_read: 'product:read',
+  // …
+} as const
+```
+
+When adding a new backend permission, add it to the matching constants file and ensure it flows through `RBAC_PERMISSIONS`.
+
+## Reading permissions
+
+| API | Location | Use for |
+|---|---|---|
+| `usePermissions()` | `src/lib/rbac/hooks.ts` | Full permission list |
+| `useHasAllPermissions(all)` | `src/lib/rbac/hooks.ts` | AND check in components |
+| `hasPermission(state, p)` | `src/stores/auth.store.ts` | Imperative check outside React |
+| `hasAllPermissions` / `hasAnyPermission` | `src/stores/auth.store.ts` | Guard functions |
+
+Permissions hydrate via `AuthBootstrap` → `getMyRole()` → `setMyRole()`. Don't read permissions from `localStorage` directly in feature code.
+
+## Route-level guards
+
+### Authentication
+
+```ts
+import { ensureAuthenticated } from '#/lib/auth-guards'
+
+export const Route = createFileRoute('/me')({
+  beforeLoad: ensureAuthenticated,
+  // …
+})
+```
+
+`ensureAnonymous()` redirects authenticated users away (sign-in/sign-up flows).
+
+### Permission-gated routes
+
+```ts
+import { ensurePermission } from '#/lib/rbac/guards'
+import { ROLE_PERMISSIONS } from '#/lib/rbac/constants'
+
+export const Route = createFileRoute('/admin/roles')({
+  beforeLoad: ensurePermission({
+    all: [ROLE_PERMISSIONS.role_read],
+    redirectTo: '/forbidden',
+  }),
+  // …
+})
+```
+
+`ensurePermission` checks auth first (→ `/sign-in`), then `all` (AND) and/or `any` (OR) permission lists (→ `/forbidden` by default).
+
+## Component-level gating
+
+Use `<RequirePermission>` for conditional UI — routes stay reachable; the page decides what to show.
+
+```tsx
+import { RequirePermission } from '#/components/rbac/require-permission'
+import { PRODUCT_PERMISSIONS } from '#/lib/rbac/constants'
+
+<RequirePermission all={[PRODUCT_PERMISSIONS.product_create]}>
+  <Button>Add product</Button>
+</RequirePermission>
+```
+
+- `all` — every listed permission required (AND)
+- `fallback` — rendered when check fails (default `null`)
+- Combine route `beforeLoad` guards for whole-page access with `<RequirePermission>` for action buttons
+
+## Auth store selectors
+
+Read auth state through store selectors — never duplicate token/role logic:
+
+```ts
+import { useStore } from '@tanstack/react-store'
+import { authStore, selectAccessToken, selectIsAuthenticated } from '#/stores/auth.store'
+
+const accessToken = useStore(authStore, selectAccessToken)
+```
+
+For SSR-safe subscription in client components, prefer `useClientStore` from `#/hooks/use-client-store`.
+
+## Anti-patterns
+
+- Hardcoded permission strings (`'product:read'`) — use `PRODUCT_PERMISSIONS.product_read`
+- Reading `localStorage` for role/permissions in feature code
+- Assuming frontend gating is security — always handle 403 from API gracefully
+- Permission-gating entire routes for individual button actions — use `<RequirePermission>` instead
+- Skipping `beforeLoad: ensureAuthenticated` on private pages and relying only on loader redirects

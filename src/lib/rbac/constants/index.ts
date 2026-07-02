@@ -7,6 +7,7 @@ import { DELIVERY_PERMISSIONS } from '#/lib/rbac/constants/delivery'
 import { DISCOUNT_PERMISSIONS } from '#/lib/rbac/constants/discount'
 import { IMAGE_PERMISSIONS } from '#/lib/rbac/constants/image'
 import { INVENTORY_PERMISSIONS } from '#/lib/rbac/constants/inventory'
+import { NOTIFICATION_PERMISSIONS } from '#/lib/rbac/constants/notification'
 import { ORDER_PERMISSIONS } from '#/lib/rbac/constants/order'
 import { PRODUCT_PERMISSIONS } from '#/lib/rbac/constants/product'
 import { ROLE_PERMISSIONS } from '#/lib/rbac/constants/role'
@@ -14,6 +15,7 @@ import {
   SHOP_ADDRESS_PERMISSIONS,
   SHOP_CATALOG_PERMISSIONS,
   SHOP_DISCOUNT_PERMISSIONS,
+  SHOP_IMAGE_PERMISSIONS,
   SHOP_MODERATOR_PERMISSIONS,
   SHOP_PERMISSIONS,
   SHOP_STAFF_PERMISSIONS,
@@ -28,10 +30,12 @@ export * from '#/lib/rbac/constants/delivery'
 export * from '#/lib/rbac/constants/discount'
 export * from '#/lib/rbac/constants/image'
 export * from '#/lib/rbac/constants/inventory'
+export * from '#/lib/rbac/constants/notification'
 export * from '#/lib/rbac/constants/order'
 export * from '#/lib/rbac/constants/product'
 export * from '#/lib/rbac/constants/role'
 export * from '#/lib/rbac/constants/shop'
+export * from '#/lib/rbac/constants/system-roles'
 export * from '#/lib/rbac/constants/user'
 export * from '#/lib/rbac/constants/warehouse'
 
@@ -45,12 +49,14 @@ export const RBAC_PERMISSIONS = mergePermissionMaps(
   SHOP_MODERATOR_PERMISSIONS,
   SHOP_STAFF_PERMISSIONS,
   SHOP_ADDRESS_PERMISSIONS,
+  SHOP_IMAGE_PERMISSIONS,
   USER_PERMISSIONS,
   IMAGE_PERMISSIONS,
   CATEGORY_PERMISSIONS,
   WAREHOUSE_PERMISSIONS,
   PRODUCT_PERMISSIONS,
   INVENTORY_PERMISSIONS,
+  NOTIFICATION_PERMISSIONS,
   DELIVERY_PERMISSIONS,
   DISCOUNT_PERMISSIONS,
   ORDER_PERMISSIONS,

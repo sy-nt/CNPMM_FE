@@ -5,6 +5,7 @@ import { ImageWithFallback } from '#/components/image-with-fallback'
 import { Button } from '#/components/ui/button'
 import { formatPrice } from '#/lib/format'
 import { resolveImageUrl } from '#/lib/images'
+import { cn } from '#/lib/utils'
 import type { CartLineView } from '#/pages/cart/_cart-line'
 import { QUANTITY_MIN, QuantityStepper } from '#/pages/product/quantity-stepper'
 
@@ -16,18 +17,24 @@ const QUANTITY_FALLBACK_MAX = 99
 
 type CartItemRowProps = {
   line: CartLineView
+  selected: boolean
+  onSelectedChange: (skuId: string, selected: boolean) => void
   isUpdating: boolean
   isRemoving: boolean
   onQuantityChange: (skuId: string, nextQuantity: number) => void
   onRemove: (skuId: string) => void
+  embedded?: boolean
 }
 
 export function CartItemRow({
   line,
+  selected,
+  onSelectedChange,
   isUpdating,
   isRemoving,
   onQuantityChange,
   onRemove,
+  embedded = false,
 }: CartItemRowProps) {
   const imageUrl = resolveImageUrl(line.imageKey)
   const formattedUnit = formatPrice(line.unitPrice)
@@ -37,6 +44,7 @@ export function CartItemRow({
       : formattedUnit
   const maxQuantity = line.availableStock ?? QUANTITY_FALLBACK_MAX
   const stepperDisabled = isUpdating || isRemoving || line.isInactive
+  const checkboxDisabled = isUpdating || isRemoving || line.isInactive
 
   const nameNode = line.productSlug ? (
     <Link
@@ -53,7 +61,26 @@ export function CartItemRow({
   )
 
   return (
-    <li className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-stretch">
+    <li
+      className={cn(
+        'flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch',
+        embedded
+          ? 'border-b border-border last:border-b-0'
+          : 'rounded-xl border border-border bg-card',
+      )}
+    >
+      <label className="mt-1 flex items-start gap-2 sm:mt-0 sm:items-center">
+        <input
+          type="checkbox"
+          className="mt-1 size-4 rounded border-border text-primary accent-primary sm:mt-0"
+          checked={selected}
+          disabled={checkboxDisabled}
+          onChange={(event) =>
+            onSelectedChange(line.skuId, event.target.checked)
+          }
+          aria-label={`Select ${line.name}`}
+        />
+      </label>
       <ImageWithFallback
         src={imageUrl}
         alt=""

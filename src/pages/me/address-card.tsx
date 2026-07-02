@@ -57,7 +57,7 @@ export function AddressCard({
   }
 
   return (
-    <Card>
+    <Card className="h-fit w-full self-start">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MapPin aria-hidden="true" className="size-4 text-primary" />
@@ -82,7 +82,10 @@ export function AddressCard({
       <CardContent className="space-y-4">
         {isEditing ? (
           <AddressForm
+            key={address.id}
+            formId={address.id}
             initialValues={initialValues}
+            showCoordinates={false}
             submitLabel="Save changes"
             pendingLabel="Saving…"
             onSubmit={onSave}

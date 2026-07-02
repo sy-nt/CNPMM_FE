@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { Loader2, ShoppingBag, Trash2 } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
@@ -9,12 +10,19 @@ import {
   CardTitle,
 } from '#/components/ui/card'
 import { formatPrice } from '#/lib/format'
+import {
+  buildCheckoutItemsFromLines,
+  encodeCheckoutSelection,
+} from '#/pages/checkout/_checkout-selection'
+import type { CartLineView } from '#/pages/cart/_cart-line'
 
 type CartSummaryProps = {
   itemCount: number
   subtotal: number | null
   /** Subtotal reported by the server, takes priority when present. */
   serverSubtotal: string | null
+  selectedCount: number
+  selectedLines: ReadonlyArray<CartLineView>
   isClearing: boolean
   onClear: () => void
 }
@@ -23,9 +31,14 @@ export function CartSummary({
   itemCount,
   subtotal,
   serverSubtotal,
+  selectedCount,
+  selectedLines,
   isClearing,
   onClear,
 }: CartSummaryProps) {
+  const checkoutSelection = encodeCheckoutSelection(
+    buildCheckoutItemsFromLines(selectedLines),
+  )
   const displaySubtotal =
     formatPrice(serverSubtotal) ??
     (subtotal !== null ? formatPrice(String(subtotal)) : null)
@@ -43,6 +56,14 @@ export function CartSummary({
       <CardContent className="space-y-4">
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-sm font-medium text-muted-foreground">
+            Selected
+          </span>
+          <span className="text-sm font-semibold text-foreground tabular-nums">
+            {selectedCount}
+          </span>
+        </div>
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-sm font-medium text-muted-foreground">
             Subtotal
           </span>
           <span className="text-lg font-semibold text-foreground tabular-nums">
@@ -55,9 +76,11 @@ export function CartSummary({
         </p>
 
         <div className="flex flex-col gap-2">
-          <Button type="button" size="lg" disabled={itemCount === 0}>
-            <ShoppingBag aria-hidden="true" />
-            Checkout
+          <Button type="button" size="lg" disabled={selectedCount === 0} asChild>
+            <Link to="/checkout" search={{ selection: checkoutSelection }}>
+              <ShoppingBag aria-hidden="true" />
+              Checkout
+            </Link>
           </Button>
           <Button
             type="button"

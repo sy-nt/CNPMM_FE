@@ -1,18 +1,32 @@
 import { apiRequest } from '#/lib/api/client'
 import type { PaginationQuery } from '#/lib/api/common'
+import type {
+  DiscountClaim,
+  DiscountClaimListResponse,
+  DiscountListResponse,
+  DiscountRule,
+  DiscountScope,
+  DiscountType,
+  DiscountValueType,
+} from '#/lib/schemas/discount.schema'
+import {
+  discountClaimListResponseSchema,
+  discountClaimSchema,
+  discountListResponseSchema,
+} from '#/lib/schemas/discount.schema'
+import type { Maybe } from '#/lib/types'
 
 export type DiscountListQuery = PaginationQuery<
-  'createdAt' | 'updatedAt' | 'validFrom' | 'validUntil'
+  'createdAt' | 'name' | 'usedCount' | 'validUntil'
 >
 
-export type DiscountValueType = 'percentage' | 'fixed'
-export type DiscountType = 'product' | 'delivery'
-export type DiscountScope = 'shop' | 'global'
-
-export type DiscountRule = {
-  type: string
-  params: Record<string, unknown>
+export type PlatformDiscountListQuery = DiscountListQuery & {
+  discountType?: DiscountType
 }
+
+export type DiscountClaimListQuery = PaginationQuery<'createdAt'>
+
+export type { DiscountValueType, DiscountType, DiscountScope, DiscountRule }
 
 export type CreateShopDiscountInput = {
   name: string
@@ -47,12 +61,19 @@ export type CreateGlobalDiscountInput = {
 
 export type UpdateDiscountInput = Partial<CreateGlobalDiscountInput>
 
+export type AdminDiscountListQuery = DiscountListQuery & {
+  scope?: DiscountScope
+  isActive?: boolean
+  code?: string
+  discountType?: DiscountType
+}
+
 export function createShopDiscount(
   accessToken: string,
   input: CreateShopDiscountInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest('/discount/shop', {
+  return apiRequest('/shop/discount/', {
     method: 'POST',
     accessToken,
     body: input,
@@ -65,7 +86,7 @@ export function getShopDiscount(
   discountId: string,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/discount/shop/${discountId}`, {
+  return apiRequest(`/shop/discount/${discountId}`, {
     method: 'GET',
     accessToken,
     signal,
@@ -78,7 +99,7 @@ export function updateShopDiscount(
   input: UpdateShopDiscountInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/discount/shop/${discountId}`, {
+  return apiRequest(`/shop/discount/${discountId}`, {
     method: 'PATCH',
     accessToken,
     body: input,
@@ -91,7 +112,7 @@ export function deleteShopDiscount(
   discountId: string,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/discount/shop/${discountId}`, {
+  return apiRequest(`/shop/discount/${discountId}`, {
     method: 'DELETE',
     accessToken,
     signal,
@@ -103,7 +124,7 @@ export function listShopDiscounts(
   query: DiscountListQuery = {},
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest('/discounts/shop', {
+  return apiRequest('/shop/discounts/', {
     method: 'GET',
     accessToken,
     query,
@@ -116,7 +137,7 @@ export function createGlobalDiscount(
   input: CreateGlobalDiscountInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest('/discount/', {
+  return apiRequest('/admin/discount/', {
     method: 'POST',
     accessToken,
     body: input,
@@ -124,25 +145,25 @@ export function createGlobalDiscount(
   })
 }
 
-export function getDiscount(
+export function getAdminDiscount(
   accessToken: string,
   discountId: string,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/discount/${discountId}`, {
+  return apiRequest(`/admin/discount/${discountId}`, {
     method: 'GET',
     accessToken,
     signal,
   })
 }
 
-export function updateDiscount(
+export function updateAdminDiscount(
   accessToken: string,
   discountId: string,
   input: UpdateDiscountInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/discount/${discountId}`, {
+  return apiRequest(`/admin/discount/${discountId}`, {
     method: 'PATCH',
     accessToken,
     body: input,
@@ -150,27 +171,68 @@ export function updateDiscount(
   })
 }
 
-export function deleteDiscount(
+export function deleteAdminDiscount(
   accessToken: string,
   discountId: string,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/discount/${discountId}`, {
+  return apiRequest(`/admin/discount/${discountId}`, {
     method: 'DELETE',
     accessToken,
     signal,
   })
 }
 
-export function listDiscounts(
+export function listAdminDiscounts(
   accessToken: string,
-  query: DiscountListQuery = {},
+  query: AdminDiscountListQuery = {},
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest('/discounts/', {
+  return apiRequest('/admin/discounts/', {
     method: 'GET',
     accessToken,
     query,
     signal,
   })
+}
+
+export async function listPlatformDiscounts(
+  accessToken: Maybe<string>,
+  query: PlatformDiscountListQuery = {},
+  signal?: AbortSignal,
+): Promise<DiscountListResponse> {
+  const raw = await apiRequest<unknown>('/discounts/', {
+    method: 'GET',
+    accessToken,
+    query,
+    signal,
+  })
+  return discountListResponseSchema.parse(raw)
+}
+
+export async function claimDiscount(
+  accessToken: string,
+  discountId: string,
+  signal?: AbortSignal,
+): Promise<DiscountClaim> {
+  const raw = await apiRequest<unknown>(`/discount/${discountId}/claim`, {
+    method: 'POST',
+    accessToken,
+    signal,
+  })
+  return discountClaimSchema.parse(raw)
+}
+
+export async function listMyDiscountClaims(
+  accessToken: string,
+  query: DiscountClaimListQuery = {},
+  signal?: AbortSignal,
+): Promise<DiscountClaimListResponse> {
+  const raw = await apiRequest<unknown>('/discounts/me/claims', {
+    method: 'GET',
+    accessToken,
+    query,
+    signal,
+  })
+  return discountClaimListResponseSchema.parse(raw)
 }

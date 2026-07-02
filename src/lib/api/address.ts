@@ -1,7 +1,7 @@
 import { invalidateCacheByPrefix, withCache } from '#/lib/api/cache'
 import { apiRequest } from '#/lib/api/client'
-import { personalAddressListSchema } from '#/lib/schemas/address.schema'
-import type { PersonalAddressList } from '#/lib/schemas/address.schema'
+import { personalAddressListSchema, shopAddressListSchema } from '#/lib/schemas/address.schema'
+import type { PersonalAddressList, ShopAddressList } from '#/lib/schemas/address.schema'
 
 const PERSONAL_ADDRESS_CACHE_PREFIX = 'address:personal:'
 
@@ -44,8 +44,12 @@ export function invalidatePersonalAddresses(): void {
 export function listShopAddresses(
   accessToken: string,
   signal?: AbortSignal,
-): Promise<unknown> {
-  return apiRequest('/addresses/shop', { method: 'GET', accessToken, signal })
+): Promise<ShopAddressList> {
+  return apiRequest<unknown>('/shop/addresses/', {
+    method: 'GET',
+    accessToken,
+    signal,
+  }).then((data) => shopAddressListSchema.parse(data))
 }
 
 export function createPersonalAddress(
@@ -66,7 +70,7 @@ export function createShopAddress(
   input: CreateAddressInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest('/address/shop', {
+  return apiRequest('/shop/address/', {
     method: 'POST',
     accessToken,
     body: input,
@@ -94,7 +98,7 @@ export function updateShopAddress(
   input: UpdateAddressInput,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/address/shop/${shopAddressId}`, {
+  return apiRequest(`/shop/address/${shopAddressId}`, {
     method: 'PATCH',
     accessToken,
     body: input,
@@ -119,7 +123,7 @@ export function deleteShopAddress(
   shopAddressId: string,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  return apiRequest(`/address/shop/${shopAddressId}`, {
+  return apiRequest(`/shop/address/${shopAddressId}`, {
     method: 'DELETE',
     accessToken,
     signal,

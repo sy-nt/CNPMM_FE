@@ -30,6 +30,9 @@ export const personalAddressListSchema = z
   .catch(() => [])
 export type PersonalAddressList = z.infer<typeof personalAddressListSchema>
 
+export const shopAddressListSchema = personalAddressListSchema
+export type ShopAddressList = z.infer<typeof shopAddressListSchema>
+
 export const addressFormSchema = z.object({
   name: _trimmedRequired(64),
   addressLine: _trimmedRequired(200),
